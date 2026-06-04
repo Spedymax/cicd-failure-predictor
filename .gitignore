@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# GCP service account credentials
+gen-lang-client-*.json
+*-service-account*.json
+.secrets/
+
+# GitHub App private keys
+*.pem
+*.private-key*
+
+# Data (large files)
+data/raw/
+data/processed/
+*.parquet
+*.csv
+!data/.gitkeep
+
+# Models
+ml/artifacts/
+*.joblib
+*.pkl
+# keep only the active production model in the repo
+!data/artifacts/v26_5class/*.joblib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Tooling / local-only
+.omc/
+.claude/
+CLAUDE.md
+
+# Documents (kept outside the public repo)
+*.docx
+*.pdf
+DEMO_GUIDE.md

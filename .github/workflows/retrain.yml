@@ -1,0 +1,40 @@
+name: Scheduled model retrain
+
+on:
+  schedule:
+    # Sunday 03:00 UTC weekly
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      tune:
+        description: "Run Optuna tuning"
+        required: false
+        default: "false"
+      n_trials:
+        description: "Optuna trials"
+        required: false
+        default: "40"
+
+jobs:
+  trigger-retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /admin/retrain on the live backend
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          ADMIN_JWT: ${{ secrets.ADMIN_JWT }}
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$ADMIN_JWT" ]; then
+            echo "::error::BACKEND_URL and ADMIN_JWT secrets must be set"; exit 1
+          fi
+          TUNE=${{ github.event.inputs.tune || 'false' }}
+          N_TRIALS=${{ github.event.inputs.n_trials || '40' }}
+          payload=$(jq -n --argjson tune "$([ "$TUNE" = "true" ] && echo true || echo false)" \
+            --argjson n "$N_TRIALS" '{tune:$tune, n_trials:$n}')
+          echo "POST $BACKEND_URL/api/v1/admin/retrain payload=$payload"
+          resp=$(curl -fsSL -X POST "$BACKEND_URL/api/v1/admin/retrain" \
+            -H "Authorization: Bearer $ADMIN_JWT" \
+            -H 'Content-Type: application/json' \
+            -d "$payload")
+          echo "Response: $resp"
+          echo "$resp" | jq -e '.run_id' >/dev/null

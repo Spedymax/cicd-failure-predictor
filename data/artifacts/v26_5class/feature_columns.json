@@ -1,0 +1,33 @@
+{
+  "feature_names": [
+    "feat_files_changed_log",
+    "feat_lines_changed_log",
+    "feat_lines_added_share",
+    "feat_avg_lines_per_file",
+    "feat_has_dependency_change_int",
+    "feat_new_deps_count",
+    "feat_new_deps_size_mb_log",
+    "feat_has_dockerfile_change_int",
+    "feat_final_image_size_mb_log",
+    "feat_image_growth_ratio",
+    "feat_hour_of_day",
+    "feat_day_of_week",
+    "feat_is_weekend",
+    "feat_is_business_hours",
+    "feat_run_attempt",
+    "feat_run_attempt_gt1",
+    "feat_test_dir_changes",
+    "feat_test_only_changes_int",
+    "feat_has_lint_config_change_int",
+    "feat_event_is_push_int",
+    "feat_test_changes_share",
+    "feat_ext_py_count",
+    "feat_ext_js_count",
+    "feat_ext_ts_count",
+    "feat_ext_go_count",
+    "feat_ext_rs_count",
+    "feat_ext_java_count",
+    "feat_ext_yml_count",
+    "feat_ext_json_count"
+  ]
+}

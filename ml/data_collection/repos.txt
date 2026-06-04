@@ -1,0 +1,221 @@
+# Seed list for GitHub Actions data collection.
+# One "owner/repo" per line. Lines starting with # are ignored.
+# Mix of languages, project sizes and CI maturity to capture diverse failure
+# patterns across the six target classes (success, oom_killed, test_timeout,
+# dependency_error, docker_build_failed, network_error).
+
+# Python — ML/Data heavy (high OOM risk, large deps, long tests)
+huggingface/transformers
+huggingface/diffusers
+huggingface/datasets
+huggingface/accelerate
+pytorch/pytorch
+pytorch/vision
+pytorch/audio
+# REMOVED (404): pytorch-lightning/pytorch-lightning
+ray-project/ray
+jax-ml/jax  # was: google/jax
+tensorflow/tensorflow
+onnx/onnx
+deepspeedai/DeepSpeed  # was: microsoft/DeepSpeed
+
+# Python — data engineering (timeouts, dep conflicts)
+pandas-dev/pandas
+scikit-learn/scikit-learn
+dask/dask
+modin-project/modin
+apache/airflow
+prefecthq/prefect
+dagster-io/dagster
+dbt-labs/dbt-core
+mlflow/mlflow
+
+# Python — web / async (network errors more likely)
+django/django
+pallets/flask
+encode/httpx
+fastapi/fastapi
+celery/celery
+aio-libs/aiohttp
+python-trio/trio
+twisted/twisted
+
+# Python — scientific
+scipy/scipy
+sympy/sympy
+ipython/ipython
+jupyter/notebook
+pytest-dev/pytest
+
+# Python — package management (dep conflicts cradle)
+pypa/pip
+python-poetry/poetry
+astral-sh/uv
+
+# Node — frontend frameworks (large npm graphs)
+facebook/react
+vercel/next.js
+vuejs/core
+sveltejs/svelte
+remix-run/remix
+angular/angular
+nuxt/nuxt
+
+# Node — tooling (timeouts, large bundles, eresolve)
+webpack/webpack
+vitejs/vite
+rollup/rollup
+parcel-bundler/parcel
+preactjs/preact
+
+# Go / Rust — fast builds, occasional cache misses
+golang/go
+rust-lang/rust
+denoland/deno
+oven-sh/bun
+
+# Infra / DevOps — Docker-heavy (docker_build_failed risk)
+moby/moby
+kubernetes/kubernetes
+containerd/containerd
+containers/podman
+docker/buildx
+helm/helm
+istio/istio
+prometheus/prometheus
+grafana/grafana
+
+# Mid-size Python projects with real CI matrices
+psf/black
+pylint-dev/pylint
+PyCQA/flake8
+PyCQA/isort
+sqlalchemy/sqlalchemy
+pydantic/pydantic
+encode/django-rest-framework
+
+# Databases / clients (network + dep heavy)
+elastic/elasticsearch
+redis/redis
+mongodb/mongo
+
+# JVM ecosystem
+spring-projects/spring-boot
+apache/spark
+
+# === EXTENDED DIVERSITY SET (added for cross-domain F1 improvement) ===
+
+# Python — quality / testing / typing tooling (dense lint/test failures)
+pre-commit/pre-commit
+pytest-dev/pytest-cov
+pytest-dev/pytest-xdist
+pytest-dev/pytest-asyncio
+python-attrs/attrs
+python-attrs/cattrs
+tox-dev/tox
+hynek/structlog
+agronholm/anyio
+jazzband/pip-tools
+pyca/cryptography
+pallets/click
+pallets/jinja
+pallets/werkzeug
+pylint-dev/astroid
+python-pillow/Pillow
+
+# Python — ML / data libraries (more OOM + timeout cases)
+optuna/optuna
+lightgbm-org/LightGBM  # was: microsoft/LightGBM
+dmlc/xgboost
+catboost/catboost
+streamlit/streamlit
+gradio-app/gradio
+langchain-ai/langchain
+chroma-core/chroma
+ultralytics/ultralytics
+
+# TypeScript / Node — large monorepos (dep conflicts + long tests)
+microsoft/TypeScript
+microsoft/playwright
+microsoft/vscode
+cypress-io/cypress
+jestjs/jest
+mochajs/mocha
+nrwl/nx
+nestjs/nest
+fastify/fastify
+expressjs/express
+koajs/koa
+prisma/prisma
+typeorm/typeorm
+sequelize/sequelize
+knex/knex
+TanStack/query
+TanStack/router
+mui/material-ui
+ant-design/ant-design
+chakra-ui/chakra-ui
+tailwindlabs/tailwindcss
+gatsbyjs/gatsby
+ionic-team/ionic-framework
+electron/electron
+vercel/turborepo
+
+# Go ecosystem (Docker-heavy, network-sensitive)
+gin-gonic/gin
+gofiber/fiber
+spf13/cobra
+spf13/viper
+urfave/cli
+gohugoio/hugo
+traefik/traefik
+kubernetes-sigs/kustomize
+argoproj/argo-cd
+argoproj/argo-workflows
+minio/minio
+hashicorp/terraform
+hashicorp/consul
+hashicorp/vault
+caddyserver/caddy
+etcd-io/etcd
+envoyproxy/envoy
+cilium/cilium
+linkerd/linkerd2
+jaegertracing/jaeger
+
+# Rust ecosystem (cargo dependency resolution + slow builds)
+tokio-rs/tokio
+serde-rs/serde
+rust-lang/cargo
+actix/actix-web
+BurntSushi/ripgrep
+sharkdp/fd
+sharkdp/bat
+clap-rs/clap
+diesel-rs/diesel
+rust-lang/rust-analyzer
+
+# JVM / Kotlin (gradle + maven failures)
+JetBrains/kotlin
+google/guava
+google/gson
+google/error-prone
+FasterXML/jackson-databind
+spring-projects/spring-framework
+apache/kafka
+apache/cassandra
+gradle/gradle
+
+# .NET
+dotnet/runtime
+dotnet/aspnetcore
+dotnet/efcore
+
+# Ruby (rspec / bundler failures)
+rails/rails
+sidekiq/sidekiq
+
+# Telemetry / observability (often hit network errors in CI)
+open-telemetry/opentelemetry-python
+open-telemetry/opentelemetry-js
+DataDog/dd-trace-py

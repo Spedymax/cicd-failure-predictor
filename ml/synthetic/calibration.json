@@ -1,0 +1,320 @@
+{
+  "per_class": {
+    "success": {
+      "n_samples": 8263,
+      "files_changed": {
+        "mean": 9.444390657146315,
+        "std": 31.926683296549307,
+        "min": 0,
+        "max": 300
+      },
+      "lines_added": {
+        "mean": 596.2520876195086,
+        "std": 9000.039471008835,
+        "min": 0,
+        "max": 342288
+      },
+      "lines_deleted": {
+        "mean": 259.0550647464601,
+        "std": 4460.54151717034,
+        "min": 0,
+        "max": 161583
+      },
+      "n_jobs": {
+        "mean": 8.55439912864577,
+        "std": 27.64447115391439,
+        "min": 1,
+        "max": 477
+      },
+      "duration_seconds": {
+        "median": 97.79052961172056,
+        "log_sigma": 1.7360429208300017
+      },
+      "longest_job_seconds": {
+        "median": 65.70009343087682,
+        "log_sigma": 1.9217834270134184
+      },
+      "has_dependency_change": {
+        "p": 0.200653515672274
+      },
+      "has_dockerfile_change": {
+        "p": 0.008592520876195086
+      }
+    },
+    "oom_killed": {
+      "n_samples": 34,
+      "files_changed": {
+        "mean": 15.264705882352942,
+        "std": 29.073243028730257,
+        "min": 0,
+        "max": 104
+      },
+      "lines_added": {
+        "mean": 571.8235294117648,
+        "std": 1358.156437982975,
+        "min": 0,
+        "max": 5447
+      },
+      "lines_deleted": {
+        "mean": 140.73529411764707,
+        "std": 311.15924699359226,
+        "min": 0,
+        "max": 1109
+      },
+      "n_jobs": {
+        "mean": 31.970588235294116,
+        "std": 21.45924357819019,
+        "min": 1,
+        "max": 67
+      },
+      "duration_seconds": {
+        "median": 1688.131589722084,
+        "log_sigma": 1.1394236370055255
+      },
+      "longest_job_seconds": {
+        "median": 1539.3912258804166,
+        "log_sigma": 1.1860098734579612
+      },
+      "has_dependency_change": {
+        "p": 0.11764705882352941
+      },
+      "has_dockerfile_change": {
+        "p": 0.11764705882352941
+      }
+    },
+    "test_timeout": {
+      "n_samples": 161,
+      "files_changed": {
+        "mean": 6.198757763975156,
+        "std": 9.047713328199121,
+        "min": 0,
+        "max": 64
+      },
+      "lines_added": {
+        "mean": 221.59627329192546,
+        "std": 544.9487568237507,
+        "min": 0,
+        "max": 3792
+      },
+      "lines_deleted": {
+        "mean": 175.19254658385094,
+        "std": 1096.4842942998819,
+        "min": 0,
+        "max": 12078
+      },
+      "n_jobs": {
+        "mean": 50.91304347826087,
+        "std": 96.2118774259082,
+        "min": 1,
+        "max": 477
+      },
+      "duration_seconds": {
+        "median": 1436.0515440500405,
+        "log_sigma": 1.1909088880421292
+      },
+      "longest_job_seconds": {
+        "median": 1252.4258497781711,
+        "log_sigma": 1.2199880924799953
+      },
+      "has_dependency_change": {
+        "p": 0.13043478260869565
+      },
+      "has_dockerfile_change": {
+        "p": 0.0
+      }
+    },
+    "dependency_error": {
+      "n_samples": 103,
+      "files_changed": {
+        "mean": 5.728155339805825,
+        "std": 29.707046718793325,
+        "min": 0,
+        "max": 300
+      },
+      "lines_added": {
+        "mean": 3384.097087378641,
+        "std": 33556.94960578126,
+        "min": 0,
+        "max": 342288
+      },
+      "lines_deleted": {
+        "mean": 65.48543689320388,
+        "std": 255.33065803688166,
+        "min": 0,
+        "max": 2331
+      },
+      "n_jobs": {
+        "mean": 29.92233009708738,
+        "std": 79.77780908094125,
+        "min": 1,
+        "max": 477
+      },
+      "duration_seconds": {
+        "median": 300.08912560271847,
+        "log_sigma": 1.3339506742428666
+      },
+      "longest_job_seconds": {
+        "median": 245.68326976030372,
+        "log_sigma": 1.3765972066508592
+      },
+      "has_dependency_change": {
+        "p": 0.3786407766990291
+      },
+      "has_dockerfile_change": {
+        "p": 0.02912621359223301
+      }
+    },
+    "docker_build_failed": {
+      "n_samples": 160,
+      "files_changed": {
+        "mean": 15.24375,
+        "std": 42.982372386101495,
+        "min": 1,
+        "max": 300
+      },
+      "lines_added": {
+        "mean": 726.0125,
+        "std": 3390.7882932798607,
+        "min": 0,
+        "max": 31977
+      },
+      "lines_deleted": {
+        "mean": 416.575,
+        "std": 1259.1556325073561,
+        "min": 0,
+        "max": 5003
+      },
+      "n_jobs": {
+        "mean": 35.69375,
+        "std": 65.78278620534023,
+        "min": 1,
+        "max": 307
+      },
+      "duration_seconds": {
+        "median": 389.0316939184995,
+        "log_sigma": 1.1951650592059921
+      },
+      "longest_job_seconds": {
+        "median": 305.9531183047572,
+        "log_sigma": 1.313891930444699
+      },
+      "has_dependency_change": {
+        "p": 0.3
+      },
+      "has_dockerfile_change": {
+        "p": 0.06875
+      }
+    },
+    "network_error": {
+      "n_samples": 64,
+      "files_changed": {
+        "mean": 6.234375,
+        "std": 19.99823600619252,
+        "min": 1,
+        "max": 159
+      },
+      "lines_added": {
+        "mean": 167.703125,
+        "std": 753.9130354293089,
+        "min": 1,
+        "max": 5959
+      },
+      "lines_deleted": {
+        "mean": 139.78125,
+        "std": 721.6555720344973,
+        "min": 0,
+        "max": 5605
+      },
+      "n_jobs": {
+        "mean": 32.46875,
+        "std": 31.070468671030696,
+        "min": 1,
+        "max": 134
+      },
+      "duration_seconds": {
+        "median": 1055.0734693308327,
+        "log_sigma": 1.1470584738415257
+      },
+      "longest_job_seconds": {
+        "median": 795.6316658977596,
+        "log_sigma": 1.1861522119213543
+      },
+      "has_dependency_change": {
+        "p": 0.078125
+      },
+      "has_dockerfile_change": {
+        "p": 0.0
+      }
+    },
+    "other_failure": {
+      "n_samples": 7626,
+      "files_changed": {
+        "mean": 11.318384474167322,
+        "std": 36.564625009130296,
+        "min": 0,
+        "max": 300
+      },
+      "lines_added": {
+        "mean": 1222.5976921059532,
+        "std": 31104.95099733765,
+        "min": 0,
+        "max": 1381164
+      },
+      "lines_deleted": {
+        "mean": 407.4963283503803,
+        "std": 7688.249648782099,
+        "min": 0,
+        "max": 611794
+      },
+      "n_jobs": {
+        "mean": 16.916469971151326,
+        "std": 39.745690058528886,
+        "min": 0,
+        "max": 983
+      },
+      "duration_seconds": {
+        "median": 202.14804762515558,
+        "log_sigma": 1.8265540012674708
+      },
+      "longest_job_seconds": {
+        "median": 149.4324869454971,
+        "log_sigma": 1.922260560921466
+      },
+      "has_dependency_change": {
+        "p": 0.2116443745082612
+      },
+      "has_dockerfile_change": {
+        "p": 0.012063991607658012
+      }
+    }
+  },
+  "_meta": {
+    "source_parquet": "../data/raw/gha_runs_hybrid.parquet",
+    "n_total_rows": 16411,
+    "class_distribution": {
+      "success": 8263,
+      "other_failure": 7626,
+      "test_timeout": 161,
+      "docker_build_failed": 160,
+      "dependency_error": 103,
+      "network_error": 64,
+      "oom_killed": 34
+    },
+    "calibrated_columns": {
+      "counts": [
+        "files_changed",
+        "lines_added",
+        "lines_deleted",
+        "n_jobs"
+      ],
+      "lognormal": [
+        "duration_seconds",
+        "longest_job_seconds"
+      ],
+      "bernoulli": [
+        "has_dependency_change",
+        "has_dockerfile_change"
+      ]
+    }
+  }
+}

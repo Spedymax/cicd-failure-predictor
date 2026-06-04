@@ -1,0 +1,29 @@
+# Holdout list — repositories deliberately NOT in repos.txt.
+# Used by scripts/eval_holdout.py to estimate generalisation on
+# out-of-distribution projects.
+
+# Frontend / Node we didn't train on
+expressjs/express
+microsoft/vscode
+electron/electron
+
+# Python — different ecosystem niches
+numpy/numpy
+matplotlib/matplotlib
+plotly/plotly.py
+psf/requests
+pyca/cryptography
+
+# Go / system tooling
+gohugoio/hugo
+goharbor/harbor
+hashicorp/terraform
+
+# Infra / DevOps not in training
+istio/api
+linkerd/linkerd2
+argoproj/argo-cd
+
+# Mid-size mixed
+DefinitelyTyped/DefinitelyTyped
+nodejs/node

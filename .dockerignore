@@ -1,0 +1,45 @@
+**/.git
+**/.venv
+**/venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/node_modules
+**/dist
+**/build
+**/.next
+
+# Heavy stuff that must NOT bloat the image:
+data/raw
+data/processed/*
+!data/processed/features_real_only.parquet
+data/artifacts/*
+!data/artifacts/v26_5class
+data/retrain_runs
+
+# Notebooks, secrets, local dev:
+*.ipynb
+.env
+.env.*
+!.env.example
+.secrets
+docs
+demo-repo
+frontend/node_modules
+frontend/dist
+frontend/.vite
+ml/.venv
+ml/.pytest_cache
+ml/.omc
+ml/notebooks
+ml/tests
+scripts/locustfile.py
+infra/README.md
+
+# CI / editor noise:
+.github
+.idea
+.vscode
+.DS_Store
+*.log

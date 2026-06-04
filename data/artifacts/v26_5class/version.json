@@ -1,0 +1,17 @@
+{
+  "trained_at": "2026-05-19T17:23:46.962998+00:00",
+  "type": "two_stage",
+  "feature_count": 29,
+  "base_dataset": "data/processed/features_real_only.parquet",
+  "cause_classes": [
+    "dependency_error",
+    "docker_build_failed",
+    "other_failure",
+    "test_failure",
+    "test_timeout"
+  ],
+  "merged_into_other_failure": [
+    "oom_killed",
+    "network_error"
+  ]
+}
