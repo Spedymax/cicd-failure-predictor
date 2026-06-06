@@ -30,7 +30,7 @@ jobs:
           bash scripts/backup_db.sh
 
       - name: Upload dump as artifact (30-day retention)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: db-backup-${{ github.run_id }}
           path: backups/*.dump
