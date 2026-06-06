@@ -26,11 +26,11 @@ jobs:
 
       - name: Sync backend deps
         working-directory: backend
-        run: uv sync --frozen --dev
+        run: uv sync --frozen --extra dev
 
       - name: Ruff (backend)
         working-directory: backend
-        run: uv run ruff check app/ tests/
+        run: uv run --no-sync ruff check app/ tests/
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -64,11 +64,11 @@ jobs:
 
       - name: Sync backend deps
         working-directory: backend
-        run: uv sync --frozen --dev
+        run: uv sync --frozen --extra dev
 
       - name: mypy (app/)
         working-directory: backend
-        run: uv run mypy app/ --ignore-missing-imports --follow-imports=silent
+        run: uv run --no-sync mypy app/ --ignore-missing-imports --follow-imports=silent
 
   # 3. Test — pytest with coverage gate (NFR-15: >= 70 %). The suite is
   # self-contained: SQLite in-memory, no external PostgreSQL/Redis needed.
@@ -85,11 +85,11 @@ jobs:
 
       - name: Sync backend deps
         working-directory: backend
-        run: uv sync --frozen --dev
+        run: uv sync --frozen --extra dev
 
       - name: pytest --cov
         working-directory: backend
-        run: uv run pytest --cov=app --cov-report=xml --cov-report=term-missing --cov-fail-under=70
+        run: uv run --no-sync pytest --cov=app --cov-report=xml --cov-report=term-missing --cov-fail-under=70
 
       - name: Upload coverage
         if: always()
