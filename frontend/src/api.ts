@@ -166,6 +166,27 @@ export const fetchPrediction = async (id: number): Promise<PredictionDetail> => 
   return data;
 };
 
+export const exportPredictions = async (
+  format: "json" | "csv",
+  source: SourceFilter = "all",
+  predictedClass: FailureClass | null = null,
+): Promise<void> => {
+  const params: Record<string, string> = { format, source };
+  if (predictedClass) params.predicted_class = predictedClass;
+  const resp = await client.get("/predictions/export", {
+    params,
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(resp.data as Blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `predictions.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 // ---------- Override ----------
 
 export const overridePrediction = async (

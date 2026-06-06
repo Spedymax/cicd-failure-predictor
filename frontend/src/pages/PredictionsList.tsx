@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  exportPredictions,
   fetchPredictions,
   fetchTrends,
   type FailureClass,
@@ -51,6 +52,18 @@ export default function PredictionsList() {
   const [tab, setTab] = useState<SourceFilter>("demo");
   const [classFilter, setClassFilter] = useState<FailureClass | "all">("all");
   const [windowDays, setWindowDays] = useState<number>(7);
+  const [exporting, setExporting] = useState<"json" | "csv" | null>(null);
+
+  const handleExport = async (format: "json" | "csv") => {
+    setExporting(format);
+    try {
+      await exportPredictions(format, tab, classFilter === "all" ? null : classFilter);
+    } catch (err) {
+      console.error("export failed", err);
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["predictions", tab, classFilter],
@@ -167,6 +180,26 @@ export default function PredictionsList() {
                 </option>
               ))}
             </select>
+            <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden />
+            <span className="text-xs text-slate-400">Експорт:</span>
+            <div className="inline-flex overflow-hidden rounded-md border border-slate-300 shadow-sm">
+              <button
+                type="button"
+                onClick={() => handleExport("json")}
+                disabled={exporting !== null}
+                className="border-r border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {exporting === "json" ? "…" : "JSON"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport("csv")}
+                disabled={exporting !== null}
+                className="bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {exporting === "csv" ? "…" : "CSV"}
+              </button>
+            </div>
           </div>
         </div>
 
