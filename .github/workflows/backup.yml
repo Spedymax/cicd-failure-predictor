@@ -1,0 +1,38 @@
+name: Database backup
+
+on:
+  schedule:
+    # Daily 02:00 UTC (NFR-06: logical backup at least every 24h).
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  pg-dump:
+    name: pg_dump snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install postgresql-client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Run backup script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKUP_DIR: backups
+          BACKUP_RETENTION: "30"
+        run: |
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "::error title=Missing secret::DATABASE_URL secret must be configured"; exit 1
+          fi
+          bash scripts/backup_db.sh
+
+      - name: Upload dump as artifact (30-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backups/*.dump
+          retention-days: 30
+          if-no-files-found: error
