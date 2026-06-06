@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import csv
+import io
+import json
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import Row, func, or_, select
 from sqlalchemy.orm import Session
@@ -44,6 +47,29 @@ ALL_CLASSES: tuple[str, ...] = (
 )
 
 
+def _prediction_filters(
+    repository: str | None, source: str, predicted_class: str | None
+) -> list:
+    """Build the shared WHERE conditions for prediction listing/export."""
+    conds: list = []
+    if repository:
+        conds.append(Repository.full_name == repository)
+    if source == "demo":
+        conds.append(or_(*[Repository.full_name.like(f"{p}%") for p in DEMO_PREFIXES]))
+    elif source == "real":
+        for p in DEMO_PREFIXES:
+            conds.append(~Repository.full_name.like(f"{p}%"))
+    if predicted_class:
+        try:
+            cls = FailureClass(predicted_class)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400, detail=f"unknown predicted_class={predicted_class}"
+            ) from exc
+        conds.append(Prediction.predicted_class == cls)
+    return conds
+
+
 def _to_list_item(row: Row[tuple[Prediction, Repository]]) -> PredictionListItem:
     pred, repo = row
     sha = pred.commit.sha if pred.commit else ""
@@ -69,40 +95,67 @@ def list_predictions(
     source: str = Query(default="all", pattern="^(all|demo|real)$"),
     predicted_class: str | None = Query(default=None),
 ) -> PredictionListResponse:
+    conds = _prediction_filters(repository, source, predicted_class)
     stmt = (
         select(Prediction, Repository)
         .join(Repository, Prediction.repository_id == Repository.id)
+        .where(*conds)
         .order_by(Prediction.created_at.desc())
     )
     count_stmt = (
         select(func.count(Prediction.id))
         .select_from(Prediction)
         .join(Repository, Prediction.repository_id == Repository.id)
+        .where(*conds)
     )
-    if repository:
-        stmt = stmt.where(Repository.full_name == repository)
-        count_stmt = count_stmt.where(Repository.full_name == repository)
-    if source == "demo":
-        demo_filter = or_(*[Repository.full_name.like(f"{p}%") for p in DEMO_PREFIXES])
-        stmt = stmt.where(demo_filter)
-        count_stmt = count_stmt.where(demo_filter)
-    elif source == "real":
-        for p in DEMO_PREFIXES:
-            stmt = stmt.where(~Repository.full_name.like(f"{p}%"))
-            count_stmt = count_stmt.where(~Repository.full_name.like(f"{p}%"))
-    if predicted_class:
-        try:
-            cls = FailureClass(predicted_class)
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=400, detail=f"unknown predicted_class={predicted_class}"
-            ) from exc
-        stmt = stmt.where(Prediction.predicted_class == cls)
-        count_stmt = count_stmt.where(Prediction.predicted_class == cls)
     rows = db.execute(stmt.limit(limit).offset(offset)).all()
     total = db.scalar(count_stmt) or 0
     items = [_to_list_item(r) for r in rows]
     return PredictionListResponse(items=items, total=total, limit=limit, offset=offset)
+
+
+@router.get("/export")
+def export_predictions(
+    db: Session = Depends(get_db),
+    export_format: str = Query("json", alias="format", pattern="^(json|csv)$"),
+    repository: str | None = Query(default=None),
+    source: str = Query(default="all", pattern="^(all|demo|real)$"),
+    predicted_class: str | None = Query(default=None),
+    limit: int = Query(5000, ge=1, le=20000),
+) -> Response:
+    """Export predictions as a downloadable report (FR-15).
+
+    Supports ``format=json`` (default) and ``format=csv``. Honours the same
+    repository/source/predicted_class filters as the listing endpoint.
+    """
+    conds = _prediction_filters(repository, source, predicted_class)
+    stmt = (
+        select(Prediction, Repository)
+        .join(Repository, Prediction.repository_id == Repository.id)
+        .where(*conds)
+        .order_by(Prediction.created_at.desc())
+        .limit(limit)
+    )
+    items = [_to_list_item(r) for r in db.execute(stmt).all()]
+    records = [item.model_dump(mode="json") for item in items]
+
+    if export_format == "csv":
+        buf = io.StringIO()
+        fieldnames = list(records[0].keys()) if records else list(PredictionListItem.model_fields)
+        writer = csv.DictWriter(buf, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(records)
+        return Response(
+            content=buf.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=predictions.csv"},
+        )
+
+    return Response(
+        content=json.dumps(records, ensure_ascii=False, default=str),
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=predictions.json"},
+    )
 
 
 @router.get("/stats/accuracy")

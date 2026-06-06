@@ -165,6 +165,29 @@ def test_override_unauthenticated(client: TestClient) -> None:
     assert r.status_code == 401
 
 
+# ---------- predictions export (FR-15) ----------
+
+
+def test_export_predictions_json(client: TestClient) -> None:
+    r = client.get("/api/v1/predictions/export?format=json")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/json")
+    assert "attachment" in r.headers.get("content-disposition", "")
+    assert isinstance(r.json(), list)
+
+
+def test_export_predictions_csv(client: TestClient) -> None:
+    r = client.get("/api/v1/predictions/export?format=csv")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "filename=predictions.csv" in r.headers.get("content-disposition", "")
+
+
+def test_export_rejects_bad_format(client: TestClient) -> None:
+    r = client.get("/api/v1/predictions/export?format=pdf")
+    assert r.status_code == 422
+
+
 # ---------- stats/trends ----------
 
 
