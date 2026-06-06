@@ -55,9 +55,58 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 
+def _health_report() -> dict[str, object]:
+    """Readiness probe (NFR-04): reports liveness plus component health.
+
+    Redis is non-critical — webhook idempotency degrades gracefully when it is
+    down — so only the database and the loaded model gate the ``ok`` status.
+    """
+    db_ok = False
+    try:
+        from sqlalchemy import text
+
+        from app.db.session import SessionLocal
+
+        with SessionLocal() as session:
+            session.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    redis_ok = False
+    try:
+        from app.core.redis_client import get_redis
+
+        redis_ok = bool(get_redis().ping())
+    except Exception:
+        redis_ok = False
+
+    model_loaded = False
+    try:
+        from app.api.dependencies import get_inference_engine
+
+        model_loaded = bool(getattr(get_inference_engine(), "feature_names", None))
+    except Exception:
+        model_loaded = False
+
+    status = "ok" if (db_ok and model_loaded) else "degraded"
+    return {
+        "status": status,
+        "env": settings.app_env,
+        "db_ok": db_ok,
+        "redis_ok": redis_ok,
+        "model_loaded": model_loaded,
+    }
+
+
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "env": settings.app_env}
+def health() -> dict[str, object]:
+    return _health_report()
+
+
+@app.get("/api/v1/health")
+def health_v1() -> dict[str, object]:
+    return _health_report()
 
 
 # ---------- Static SPA (built frontend) ----------

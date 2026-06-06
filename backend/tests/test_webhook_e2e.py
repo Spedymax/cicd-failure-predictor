@@ -63,6 +63,17 @@ def _signed_post(client: TestClient, body: bytes) -> httpx.Response:  # noqa: F8
 def test_health(client: TestClient) -> None:
     r = client.get("/health")
     assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    # Component readiness fields (NFR-04): db + model gate "ok".
+    assert body["db_ok"] is True
+    assert body["model_loaded"] is True
+    assert "redis_ok" in body
+
+
+def test_health_v1_alias(client: TestClient) -> None:
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
     assert r.json()["status"] == "ok"
 
 
