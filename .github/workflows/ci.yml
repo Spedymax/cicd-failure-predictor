@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1. Lint — ruff for the backend, tsc type-lint for the frontend.
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Sync backend deps
+        working-directory: backend
+        run: uv sync --frozen --dev
+
+      - name: Ruff (backend)
+        working-directory: backend
+        run: uv run ruff check app/ tests/
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      # ESLint is not configured in this project; the TypeScript compiler in
+      # --noEmit mode is the frontend static-analysis gate (catches type and
+      # import errors before build).
+      - name: TypeScript check (frontend)
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+  # 2. Type-check — mypy on the backend application package.
+  type-check:
+    name: Type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Sync backend deps
+        working-directory: backend
+        run: uv sync --frozen --dev
+
+      - name: mypy (app/)
+        working-directory: backend
+        run: uv run mypy app/ --ignore-missing-imports --follow-imports=silent
+
+  # 3. Test — pytest with coverage gate (NFR-15: >= 70 %). The suite is
+  # self-contained: SQLite in-memory, no external PostgreSQL/Redis needed.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Sync backend deps
+        working-directory: backend
+        run: uv sync --frozen --dev
+
+      - name: pytest --cov
+        working-directory: backend
+        run: uv run pytest --cov=app --cov-report=xml --cov-report=term-missing --cov-fail-under=70
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: backend/coverage.xml
+          if-no-files-found: ignore
+
+  # 4. Security scan — dependency and container audits.
+  # Advisory steps do not hard-fail the build (continue-on-error) so a freshly
+  # published upstream CVE cannot block an unrelated merge; review the logs.
+  security-scan:
+    name: Security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Export backend requirements
+        working-directory: backend
+        run: uv export --no-emit-project --format requirements-txt > requirements.txt
+
+      - name: pip-audit (Python deps)
+        working-directory: backend
+        continue-on-error: true
+        run: uvx pip-audit -r requirements.txt
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm audit (frontend deps)
+        working-directory: frontend
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        continue-on-error: true
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
