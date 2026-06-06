@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from app.db.models import Repository
 from app.ml import feature_builder as fb
 
-
 # ---------- helpers ----------
+
 
 def test_detect_dependency_change_npm_and_pip() -> None:
     assert fb._detect_dependency_change(["package.json"])
@@ -39,9 +39,7 @@ def test_detect_test_only_changes() -> None:
 
 
 def test_count_test_dir_changes() -> None:
-    assert fb._count_test_dir_changes(
-        ["tests/a.py", "tests/b.py", "src/x.py"]
-    ) == 2
+    assert fb._count_test_dir_changes(["tests/a.py", "tests/b.py", "src/x.py"]) == 2
 
 
 def test_file_ext_count() -> None:
@@ -52,6 +50,7 @@ def test_file_ext_count() -> None:
 
 
 # ---------- build_feature_vector ----------
+
 
 @pytest.fixture
 def stub_repo() -> Repository:
@@ -69,12 +68,22 @@ def stub_repo() -> Repository:
 
 def test_build_feature_vector_returns_expected_keys(monkeypatch, stub_repo) -> None:
     monkeypatch.setattr(
-        fb, "_author_history",
-        lambda db, rid, email: {"author_success_rate": 0.8, "author_n_runs_log": 2.3, "author_avg_duration_log": 5.9},
+        fb,
+        "_author_history",
+        lambda db, rid, email: {
+            "author_success_rate": 0.8,
+            "author_n_runs_log": 2.3,
+            "author_avg_duration_log": 5.9,
+        },
     )
     monkeypatch.setattr(
-        fb, "_project_history",
-        lambda db, rid: {"project_failure_rate": 0.2, "project_n_runs_log": 4.0, "repo_failure_rate_global": 0.2},
+        fb,
+        "_project_history",
+        lambda db, rid: {
+            "project_failure_rate": 0.2,
+            "project_n_runs_log": 4.0,
+            "repo_failure_rate_global": 0.2,
+        },
     )
 
     feats = fb.build_feature_vector(
@@ -83,7 +92,7 @@ def test_build_feature_vector_returns_expected_keys(monkeypatch, stub_repo) -> N
         files=[{"filename": "package.json"}, {"filename": "src/x.ts"}],
         lines_added=120,
         lines_deleted=10,
-        created_at=datetime(2026, 5, 26, 14, 0, tzinfo=timezone.utc),  # Tuesday 14:00
+        created_at=datetime(2026, 5, 26, 14, 0, tzinfo=UTC),  # Tuesday 14:00
         author_email="dev@example.com",
         n_jobs=4,
         longest_job_seconds=180,
@@ -107,12 +116,24 @@ def test_build_feature_vector_returns_expected_keys(monkeypatch, stub_repo) -> N
 
 
 def test_build_feature_vector_clamps_extreme_values(monkeypatch, stub_repo) -> None:
-    monkeypatch.setattr(fb, "_author_history", lambda *_a, **_k: {
-        "author_success_rate": 0.5, "author_n_runs_log": 0.0, "author_avg_duration_log": 5.9,
-    })
-    monkeypatch.setattr(fb, "_project_history", lambda *_a, **_k: {
-        "project_failure_rate": 0.3, "project_n_runs_log": 0.0, "repo_failure_rate_global": 0.3,
-    })
+    monkeypatch.setattr(
+        fb,
+        "_author_history",
+        lambda *_a, **_k: {
+            "author_success_rate": 0.5,
+            "author_n_runs_log": 0.0,
+            "author_avg_duration_log": 5.9,
+        },
+    )
+    monkeypatch.setattr(
+        fb,
+        "_project_history",
+        lambda *_a, **_k: {
+            "project_failure_rate": 0.3,
+            "project_n_runs_log": 0.0,
+            "repo_failure_rate_global": 0.3,
+        },
+    )
 
     # Outrageous inputs must not produce inf / nan.
     feats = fb.build_feature_vector(
@@ -121,7 +142,7 @@ def test_build_feature_vector_clamps_extreme_values(monkeypatch, stub_repo) -> N
         files=[{"filename": f"f{i}.py"} for i in range(5000)],
         lines_added=10_000_000,
         lines_deleted=10_000_000,
-        created_at=datetime(2026, 1, 3, 23, 30, tzinfo=timezone.utc),  # Saturday
+        created_at=datetime(2026, 1, 3, 23, 30, tzinfo=UTC),  # Saturday
         author_email="x@y.z",
         n_jobs=10_000,
         longest_job_seconds=10_000_000,

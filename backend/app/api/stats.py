@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, case, cast, Date, func, or_, select
+from sqlalchemy import Date, and_, case, cast, func, or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnElement
 
 from app.api.predictions import DEMO_PREFIXES
-from app.db.models import FailureClass, Prediction, PredictionDecision, Repository
+from app.db.models import Prediction, PredictionDecision, Repository
 from app.db.session import get_db
 
 router = APIRouter(prefix="/stats", tags=["analytics"])
@@ -37,7 +37,7 @@ def trends(
       * failure_class — total count by predicted_class
       * top_repos — repos with highest mean risk_score (min 3 predictions)
     """
-    cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
+    cutoff = datetime.now(tz=UTC) - timedelta(days=days)
     src_clause = _source_filter(source)
 
     day_col = cast(Prediction.created_at, Date).label("date")
@@ -45,9 +45,15 @@ def trends(
         select(
             day_col,
             func.count(Prediction.id).label("total"),
-            func.sum(case((Prediction.decision == PredictionDecision.AUTO_APPROVE, 1), else_=0)).label("auto_approve"),
-            func.sum(case((Prediction.decision == PredictionDecision.WARN, 1), else_=0)).label("warn"),
-            func.sum(case((Prediction.decision == PredictionDecision.BLOCK, 1), else_=0)).label("block"),
+            func.sum(
+                case((Prediction.decision == PredictionDecision.AUTO_APPROVE, 1), else_=0)
+            ).label("auto_approve"),
+            func.sum(case((Prediction.decision == PredictionDecision.WARN, 1), else_=0)).label(
+                "warn"
+            ),
+            func.sum(case((Prediction.decision == PredictionDecision.BLOCK, 1), else_=0)).label(
+                "block"
+            ),
         )
         .join(Repository, Prediction.repository_id == Repository.id)
         .where(Prediction.created_at >= cutoff)
@@ -76,7 +82,11 @@ def trends(
     if src_clause is not None:
         fc_stmt = fc_stmt.where(src_clause)
     failure_class = {
-        (r.predicted_class.value if hasattr(r.predicted_class, "value") else str(r.predicted_class)): int(r.n)
+        (
+            r.predicted_class.value
+            if hasattr(r.predicted_class, "value")
+            else str(r.predicted_class)
+        ): int(r.n)
         for r in db.execute(fc_stmt).all()
     }
 

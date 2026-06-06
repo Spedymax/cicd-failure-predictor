@@ -36,5 +36,5 @@ def test_security_headers_present_on_health() -> None:
     assert h.get("x-content-type-options") == "nosniff"
     assert h.get("x-frame-options") == "DENY"
     assert h.get("referrer-policy") == "no-referrer"
-    assert "content-security-policy" in {k.lower() for k in h.keys()}
-    assert "permissions-policy" in {k.lower() for k in h.keys()}
+    assert "content-security-policy" in {k.lower() for k in h}
+    assert "permissions-policy" in {k.lower() for k in h}

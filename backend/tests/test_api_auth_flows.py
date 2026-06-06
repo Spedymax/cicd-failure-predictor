@@ -29,6 +29,7 @@ def _auth(token: str) -> dict[str, str]:
 
 # ---------- admin/retrain ----------
 
+
 def test_retrain_unauthenticated(client: TestClient) -> None:
     r = client.post("/api/v1/admin/retrain", json={})
     assert r.status_code == 401
@@ -63,6 +64,7 @@ def test_retrain_rejects_missing_features_file(client: TestClient) -> None:
 
 # ---------- policies CRUD ----------
 
+
 def test_policies_list_open(client: TestClient) -> None:
     r = client.get("/api/v1/policies")
     assert r.status_code == 200
@@ -73,8 +75,10 @@ def test_policies_create_requires_auth(client: TestClient) -> None:
     r = client.post(
         "/api/v1/policies",
         json={
-            "name": "ut-policy", "auto_approve_threshold": 0.1,
-            "warn_threshold": 0.2, "block_threshold": 0.3,
+            "name": "ut-policy",
+            "auto_approve_threshold": 0.1,
+            "warn_threshold": 0.2,
+            "block_threshold": 0.3,
         },
     )
     assert r.status_code == 401
@@ -85,8 +89,10 @@ def test_policies_thresholds_ordering_validated(client: TestClient) -> None:
     r = client.post(
         "/api/v1/policies",
         json={
-            "name": "bad", "auto_approve_threshold": 0.9,
-            "warn_threshold": 0.2, "block_threshold": 0.3,
+            "name": "bad",
+            "auto_approve_threshold": 0.9,
+            "warn_threshold": 0.2,
+            "block_threshold": 0.3,
         },
         headers=_auth(_admin_token()),
     )
@@ -107,6 +113,7 @@ def test_auth_login_wrong_password(client: TestClient) -> None:
 
 
 # ---------- predictions list (open) ----------
+
 
 def test_predictions_list_basic(client: TestClient) -> None:
     r = client.get("/api/v1/predictions?limit=5")
@@ -159,6 +166,7 @@ def test_override_unauthenticated(client: TestClient) -> None:
 
 
 # ---------- stats/trends ----------
+
 
 def test_stats_trends_open(client: TestClient) -> None:
     r = client.get("/api/v1/stats/trends?days=7")

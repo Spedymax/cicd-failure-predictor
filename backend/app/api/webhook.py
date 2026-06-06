@@ -83,8 +83,10 @@ async def github_webhook(
         background_tasks.add_task(_process_workflow_run_in_background, payload)
         sha = (payload.get("workflow_run") or {}).get("head_sha")
         return WebhookAck(
-            accepted=True, delivery_id=x_github_delivery,
-            repository=repo, commit_sha=sha,
+            accepted=True,
+            delivery_id=x_github_delivery,
+            repository=repo,
+            commit_sha=sha,
         )
 
     sha = (payload.get("head_commit") or {}).get("id") or payload.get("after")

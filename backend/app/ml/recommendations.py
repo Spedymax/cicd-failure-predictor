@@ -32,7 +32,7 @@ def _oom_recommendation(predicted_memory_mb: float, image_growth: float) -> Reco
     ]
     if image_growth > 5:
         actions.append(
-            f"Розмір образу зростає у {image_growth:.1f}× порівняно з base — спробуйте slim base image"
+            f"Розмір образу зростає у {image_growth:.1f}× порівняно з base — спробуйте slim base image"  # noqa: E501  (user-facing message, not worth splitting)
         )
     return Recommendation(
         severity="HIGH",
@@ -67,9 +67,7 @@ def _timeout_recommendation(predicted_duration_seconds: float) -> Recommendation
     )
 
 
-def _dependency_recommendation(
-    new_deps_count: int, has_dependency_change: bool
-) -> Recommendation:
+def _dependency_recommendation(new_deps_count: int, has_dependency_change: bool) -> Recommendation:
     if new_deps_count > 0:
         description = (
             f"Коміт додає {new_deps_count} нових залежностей. Великі версійні зрушення "
@@ -164,9 +162,13 @@ def _test_failure_recommendation(features: dict[str, float]) -> Recommendation:
         "після останніх рефакторингів",
     ]
     if py >= 1:
-        actions.append("Python: `pytest -xvs tests/test_<file>.py::<name>` для швидкої локальної перевірки")
+        actions.append(
+            "Python: `pytest -xvs tests/test_<file>.py::<name>` для швидкої локальної перевірки"
+        )
     if js_ts >= 1:
-        actions.append("JS/TS: `vitest run tests/<name>.test.ts` або `jest --testPathPattern=<name>`")
+        actions.append(
+            "JS/TS: `vitest run tests/<name>.test.ts` або `jest --testPathPattern=<name>`"
+        )
     if go >= 1:
         actions.append("Go: `go test ./... -run TestName -v`")
 
@@ -234,16 +236,10 @@ def generate_recommendations(
                 image_growth=features.get("feat_image_growth_ratio", 1.0),
             )
         )
-    if (
-        predicted_class == "test_timeout"
-        or class_probabilities.get("test_timeout", 0) > 0.25
-    ):
+    if predicted_class == "test_timeout" or class_probabilities.get("test_timeout", 0) > 0.25:
         recs.append(_timeout_recommendation(predicted_duration_seconds))
 
-    if (
-        predicted_class == "dependency_error"
-        or features.get("feat_new_deps_count", 0) >= 5
-    ):
+    if predicted_class == "dependency_error" or features.get("feat_new_deps_count", 0) >= 5:
         recs.append(
             _dependency_recommendation(
                 int(features.get("feat_new_deps_count", 0)),
@@ -251,12 +247,9 @@ def generate_recommendations(
             )
         )
 
-    if (
-        predicted_class == "docker_build_failed"
-        or (
-            features.get("feat_has_dockerfile_change_int", 0)
-            and features.get("feat_image_growth_ratio", 0) > 5
-        )
+    if predicted_class == "docker_build_failed" or (
+        features.get("feat_has_dockerfile_change_int", 0)
+        and features.get("feat_image_growth_ratio", 0) > 5
     ):
         recs.append(
             _docker_recommendation(
@@ -270,10 +263,7 @@ def generate_recommendations(
     if predicted_class == "network_error" or features.get("feat_run_attempt_gt1", 0):
         recs.append(_network_recommendation(int(features.get("feat_run_attempt", 1))))
 
-    if (
-        predicted_class == "test_failure"
-        or class_probabilities.get("test_failure", 0) > 0.25
-    ):
+    if predicted_class == "test_failure" or class_probabilities.get("test_failure", 0) > 0.25:
         recs.append(_test_failure_recommendation(features))
 
     if predicted_class == "other_failure":

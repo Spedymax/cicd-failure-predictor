@@ -7,12 +7,12 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-ARTIFACTS = Path(__file__).resolve().parents[2] / "data" / "artifacts" / "v2"
+ARTIFACTS = Path(__file__).resolve().parents[2] / "data" / "artifacts" / "v26_5class"
 
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:
-    if not (ARTIFACTS / "classifier_rf.joblib").exists():
+    if not (ARTIFACTS / "risk_rf.joblib").exists():
         pytest.skip("trained artefacts not available")
     from app.main import app
 
@@ -42,7 +42,7 @@ def _push_payload(repo: str = "demo/cicd-failure-predictor", sha: str | None = N
     }
 
 
-def _signed_post(client: TestClient, body: bytes) -> "httpx.Response":  # noqa: F821
+def _signed_post(client: TestClient, body: bytes) -> httpx.Response:  # noqa: F821
     import hashlib
     import hmac
 
@@ -116,8 +116,12 @@ def test_push_creates_prediction(client: TestClient) -> None:
     detail = client.get(f"/api/v1/predictions/{pred_id}").json()
     assert detail["commit_short"]
     assert detail["predicted_class"] in (
-        "success", "oom_killed", "test_timeout",
-        "dependency_error", "docker_build_failed", "network_error",
+        "success",
+        "test_timeout",
+        "test_failure",
+        "dependency_error",
+        "docker_build_failed",
+        "other_failure",
     )
     assert "recommendations" in detail
 

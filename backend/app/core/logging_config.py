@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 import structlog
+from structlog.typing import EventDict, WrappedLogger
 
 _EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+\.[A-Za-z]{2,})")
 
@@ -30,7 +31,9 @@ def _mask_value(value: Any) -> Any:
     return value
 
 
-def email_masking_processor(_logger, _method_name, event_dict: dict) -> dict:
+def email_masking_processor(
+    _logger: WrappedLogger, _method_name: str, event_dict: EventDict
+) -> EventDict:
     return {k: _mask_value(v) for k, v in event_dict.items()}
 
 

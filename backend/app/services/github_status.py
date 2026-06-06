@@ -64,9 +64,7 @@ def _should_post(full_name: str) -> bool:
         return False
     if not full_name or "/" not in full_name:
         return False
-    if any(full_name.startswith(p) for p in _SYNTHETIC_PREFIXES):
-        return False
-    return True
+    return not any(full_name.startswith(p) for p in _SYNTHETIC_PREFIXES)
 
 
 def post_commit_status(
@@ -106,12 +104,18 @@ def post_commit_status(
         if 200 <= r.status_code < 300:
             logger.info(
                 "github_status: posted state=%s for %s@%s pred=%d",
-                state, full_name, sha[:8], prediction_id,
+                state,
+                full_name,
+                sha[:8],
+                prediction_id,
             )
             return True
         logger.warning(
             "github_status: failed %s@%s status=%d body=%s",
-            full_name, sha[:8], r.status_code, r.text[:200],
+            full_name,
+            sha[:8],
+            r.status_code,
+            r.text[:200],
         )
         return False
     except Exception as exc:  # noqa: BLE001

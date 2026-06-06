@@ -18,10 +18,21 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import (
+    JSONB as _PostgresJSONB,  # noqa: N811  (aliased to build a portable type below)
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, TimestampMixin
+# Portable JSON column type: real ``JSONB`` on PostgreSQL (production), generic
+# ``JSON`` on every other dialect (e.g. SQLite for self-contained test runs).
+# Keeping the public name ``JSONB`` leaves all column definitions untouched.
+JSONB = JSON().with_variant(_PostgresJSONB(), "postgresql")
+
+# Portable big-int primary key: ``BIGINT`` on PostgreSQL, plain ``INTEGER`` on
+# SQLite (the only column type SQLite auto-increments).
+_BigIntPK = BigInteger().with_variant(Integer(), "sqlite")
+
+from app.db.base import Base, TimestampMixin  # noqa: E402  (after portable type defs above)
 
 
 class UserRole(str, enum.Enum):
@@ -80,13 +91,11 @@ class User(Base, TimestampMixin):
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    overrides: Mapped[list["Prediction"]] = relationship(
+    overrides: Mapped[list[Prediction]] = relationship(
         back_populates="overridden_by", foreign_keys="Prediction.overridden_by_user_id"
     )
 
-    __table_args__ = (
-        UniqueConstraint("oauth_provider", "oauth_subject", name="uq_users_oauth"),
-    )
+    __table_args__ = (UniqueConstraint("oauth_provider", "oauth_subject", name="uq_users_oauth"),)
 
 
 class Policy(Base, TimestampMixin):
@@ -101,7 +110,7 @@ class Policy(Base, TimestampMixin):
     specific_rules: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    repositories: Mapped[list["Repository"]] = relationship(back_populates="policy")
+    repositories: Mapped[list[Repository]] = relationship(back_populates="policy")
 
 
 class Repository(Base, TimestampMixin):
@@ -126,10 +135,10 @@ class Repository(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     policy: Mapped[Policy | None] = relationship(back_populates="repositories")
-    commits: Mapped[list["Commit"]] = relationship(
+    commits: Mapped[list[Commit]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
-    builds: Mapped[list["BuildHistory"]] = relationship(
+    builds: Mapped[list[BuildHistory]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
 
@@ -141,7 +150,7 @@ class Repository(Base, TimestampMixin):
 class Commit(Base, TimestampMixin):
     __tablename__ = "commits"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(_BigIntPK, primary_key=True)
     repository_id: Mapped[int] = mapped_column(
         ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False
     )
@@ -158,10 +167,10 @@ class Commit(Base, TimestampMixin):
     raw_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
 
     repository: Mapped[Repository] = relationship(back_populates="commits")
-    predictions: Mapped[list["Prediction"]] = relationship(
+    predictions: Mapped[list[Prediction]] = relationship(
         back_populates="commit", cascade="all, delete-orphan"
     )
-    builds: Mapped[list["BuildHistory"]] = relationship(back_populates="commit")
+    builds: Mapped[list[BuildHistory]] = relationship(back_populates="commit")
 
     __table_args__ = (
         UniqueConstraint("repository_id", "sha", name="uq_commits_repository_sha"),
@@ -172,13 +181,11 @@ class Commit(Base, TimestampMixin):
 class BuildHistory(Base, TimestampMixin):
     __tablename__ = "build_history"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(_BigIntPK, primary_key=True)
     repository_id: Mapped[int] = mapped_column(
         ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False
     )
-    commit_id: Mapped[int | None] = mapped_column(
-        ForeignKey("commits.id", ondelete="SET NULL")
-    )
+    commit_id: Mapped[int | None] = mapped_column(ForeignKey("commits.id", ondelete="SET NULL"))
     external_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[BuildStatus] = mapped_column(Enum(BuildStatus, name="build_status"))
     failure_class: Mapped[FailureClass | None] = mapped_column(
@@ -215,13 +222,13 @@ class ModelVersion(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
 
-    predictions: Mapped[list["Prediction"]] = relationship(back_populates="model_version")
+    predictions: Mapped[list[Prediction]] = relationship(back_populates="model_version")
 
 
 class Prediction(Base, TimestampMixin):
     __tablename__ = "predictions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(_BigIntPK, primary_key=True)
     commit_id: Mapped[int] = mapped_column(
         ForeignKey("commits.id", ondelete="CASCADE"), nullable=False
     )
@@ -246,9 +253,13 @@ class Prediction(Base, TimestampMixin):
     predicted_duration_min: Mapped[float | None] = mapped_column(Float)
 
     feature_vector: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    feature_importance: Mapped[dict[str, float]] = mapped_column(JSONB, default=dict, nullable=False)
+    feature_importance: Mapped[dict[str, float]] = mapped_column(
+        JSONB, default=dict, nullable=False
+    )
     shap_explanation: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    recommendations: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
+    recommendations: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, nullable=False
+    )
     inference_time_ms: Mapped[int] = mapped_column(Integer, nullable=False)
 
     overridden_by_user_id: Mapped[int | None] = mapped_column(
@@ -276,15 +287,13 @@ class Prediction(Base, TimestampMixin):
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(_BigIntPK, primary_key=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     action: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_id: Mapped[str | None] = mapped_column(String(64))
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         Index("ix_audit_entity", "entity_type", "entity_id"),

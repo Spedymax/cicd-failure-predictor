@@ -78,8 +78,12 @@ def register(
     db.add(user)
     db.flush()
     record_audit(
-        db, user_id=user.id, action="user.register_bootstrap",
-        entity_type="user", entity_id=user.id, payload={"email": user.email, "role": user.role.value},
+        db,
+        user_id=user.id,
+        action="user.register_bootstrap",
+        entity_type="user",
+        entity_id=user.id,
+        payload={"email": user.email, "role": user.role.value},
     )
     db.commit()
     db.refresh(user)
@@ -104,8 +108,12 @@ def admin_create_user(
     db.add(user)
     db.flush()
     record_audit(
-        db, user_id=_admin.id, action="user.create", entity_type="user",
-        entity_id=user.id, payload={"email": user.email, "role": user.role.value},
+        db,
+        user_id=_admin.id,
+        action="user.create",
+        entity_type="user",
+        entity_id=user.id,
+        payload={"email": user.email, "role": user.role.value},
     )
     db.commit()
     db.refresh(user)
@@ -117,22 +125,34 @@ def login(body: LoginIn, db: Annotated[Session, Depends(get_db)]) -> TokenOut:
     user = db.query(User).filter(User.email == body.email).first()
     if user is None or not user.password_hash or not user.is_active:
         record_audit(
-            db, user_id=None, action="user.login_failed", entity_type="user",
-            entity_id=None, payload={"email": body.email},
+            db,
+            user_id=None,
+            action="user.login_failed",
+            entity_type="user",
+            entity_id=None,
+            payload={"email": body.email},
         )
         db.commit()
         raise HTTPException(status_code=401, detail="invalid credentials")
     if not verify_password(body.password, user.password_hash):
         record_audit(
-            db, user_id=user.id, action="user.login_failed", entity_type="user",
-            entity_id=user.id, payload={"email": user.email},
+            db,
+            user_id=user.id,
+            action="user.login_failed",
+            entity_type="user",
+            entity_id=user.id,
+            payload={"email": user.email},
         )
         db.commit()
         raise HTTPException(status_code=401, detail="invalid credentials")
     user.last_login_at = datetime.now(tz=UTC)
     record_audit(
-        db, user_id=user.id, action="user.login", entity_type="user",
-        entity_id=user.id, payload={"email": user.email},
+        db,
+        user_id=user.id,
+        action="user.login",
+        entity_type="user",
+        entity_id=user.id,
+        payload={"email": user.email},
     )
     db.commit()
     return TokenOut(access_token=create_access_token(user.email, user.role.value))

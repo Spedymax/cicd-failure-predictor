@@ -97,7 +97,8 @@ class InferenceEngine:
                 self._explainer = shap.TreeExplainer(self._rf)
                 logger.info(
                     "SHAP TreeExplainer initialised for cause/single RF (%d classes, two_stage=%s)",
-                    len(self._classes), self._two_stage,
+                    len(self._classes),
+                    self._two_stage,
                 )
             except Exception as exc:  # pragma: no cover
                 logger.warning("SHAP cause TreeExplainer init failed: %s", exc)
@@ -158,17 +159,21 @@ class InferenceEngine:
 
     def predict(self, features: dict[str, float]) -> InferenceResult:
         ordered = [float(features.get(name, 0.0) or 0.0) for name in self._feature_names]
-        X = pd.DataFrame([ordered], columns=self._feature_names)
+        X = pd.DataFrame([ordered], columns=self._feature_names)  # noqa: N806  (ML feature-matrix convention)
         start = time.perf_counter()
         with self._lock:
             if self._two_stage:
                 # Stage 1: P(failure) from binary risk model
-                risk_probs = (self._risk_rf.predict_proba(X)[0] + self._risk_lgb.predict_proba(X)[0]) / 2.0
+                risk_probs = (
+                    self._risk_rf.predict_proba(X)[0] + self._risk_lgb.predict_proba(X)[0]
+                ) / 2.0
                 # Risk model: class 1 = success, class 0 = failure (sklearn lexicographic order)
                 p_success = float(risk_probs[list(self._risk_rf.classes_).index(1)])
                 p_fail = 1.0 - p_success
                 # Stage 2: P(class | failure) from cause model
-                cause_probs = (self._cause_rf.predict_proba(X)[0] + self._cause_lgb.predict_proba(X)[0]) / 2.0
+                cause_probs = (
+                    self._cause_rf.predict_proba(X)[0] + self._cause_lgb.predict_proba(X)[0]
+                ) / 2.0
                 # Build unified 7-class distribution: P(success) + P(failure)·P(class|failure)
                 class_probs = {"success": p_success}
                 for c, p in zip(self._cause_classes, cause_probs, strict=True):
@@ -209,7 +214,10 @@ class InferenceEngine:
         )
 
     def _compute_shap_explanation(
-        self, X: pd.DataFrame, cause_class_idx: int, top_k: int = 10
+        self,
+        X: pd.DataFrame,  # noqa: N803  (ML feature-matrix convention)
+        cause_class_idx: int,
+        top_k: int = 10,
     ) -> dict | None:
         """Return signed SHAP explanation for the most defence-relevant target.
 
@@ -257,15 +265,27 @@ class InferenceEngine:
         #   OR np.ndarray of shape (n_samples, n_features)  (binary, output_margin)
         if isinstance(shap_values, list):
             class_shap = np.asarray(shap_values[class_idx])[0]
-            base = float(np.asarray(expected)[class_idx]) if hasattr(expected, "__len__") else float(expected)
+            base = (
+                float(np.asarray(expected)[class_idx])
+                if hasattr(expected, "__len__")
+                else float(expected)
+            )
         else:
             arr = np.asarray(shap_values)
             if arr.ndim == 3:
                 class_shap = arr[0, :, class_idx]
-                base = float(np.asarray(expected)[class_idx]) if hasattr(expected, "__len__") else float(expected)
+                base = (
+                    float(np.asarray(expected)[class_idx])
+                    if hasattr(expected, "__len__")
+                    else float(expected)
+                )
             elif arr.ndim == 2:
                 class_shap = arr[0]
-                base = float(np.asarray(expected).item()) if hasattr(expected, "item") else float(expected)
+                base = (
+                    float(np.asarray(expected).item())
+                    if hasattr(expected, "item")
+                    else float(expected)
+                )
             else:
                 return None
 
@@ -290,7 +310,10 @@ class InferenceEngine:
         }
 
     def _compute_shap_importance(
-        self, X: pd.DataFrame, class_idx: int, top_k: int = 8
+        self,
+        X: pd.DataFrame,  # noqa: N803  (ML feature-matrix convention)
+        class_idx: int,
+        top_k: int = 8,
     ) -> dict[str, float]:
         if self._explainer is None:
             return {}
@@ -318,14 +341,10 @@ class InferenceEngine:
             return {}
         order = np.argsort(abs_shap)[::-1][:top_k]
         return {
-            self._feature_names[i]: float(abs_shap[i] / total)
-            for i in order
-            if abs_shap[i] > 0
+            self._feature_names[i]: float(abs_shap[i] / total) for i in order if abs_shap[i] > 0
         }
 
-    def _compute_local_importance(
-        self, values: list[float], top_k: int = 8
-    ) -> dict[str, float]:
+    def _compute_local_importance(self, values: list[float], top_k: int = 8) -> dict[str, float]:
         weighted: list[tuple[str, float]] = []
         total = 0.0
         for name, val, imp in zip(self._feature_names, values, self._rf_importances, strict=True):

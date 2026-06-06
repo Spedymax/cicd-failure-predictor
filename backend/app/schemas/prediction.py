@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -17,7 +16,9 @@ class ShapContribution(BaseModel):
 class ShapExplanation(BaseModel):
     target: str = Field(description="What is being explained: 'risk_failure' or 'class:<name>'")
     base_value: float = Field(description="Expected model output E[f(x)] over training data")
-    predicted_value: float = Field(description="base_value + sum(shap_value); model output on this sample")
+    predicted_value: float = Field(
+        description="base_value + sum(shap_value); model output on this sample"
+    )
     contributions: list[ShapContribution]
 
 

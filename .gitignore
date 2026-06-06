@@ -64,3 +64,5 @@ CLAUDE.md
 *.docx
 *.pdf
 DEMO_GUIDE.md
+DP.md
+DP_vs_CODE_DIFF.md

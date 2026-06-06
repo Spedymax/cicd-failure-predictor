@@ -23,6 +23,7 @@ def test_bcrypt_roundtrip() -> None:
 
 def test_jwt_token_is_signed_and_contains_role() -> None:
     from jose import jwt
+
     from app.core.config import get_settings
 
     token = create_access_token("alice@example.com", "admin")

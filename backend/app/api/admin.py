@@ -74,9 +74,13 @@ def _run_training(run_id: str, features: str, out_dir: str, tune: bool, n_trials
     """Spawn the training script as a subprocess and capture stdout/stderr."""
     log_path = _runs_dir() / f"{run_id}.log"
     cmd = [
-        sys.executable, "-m", "training.train",
-        "--features", features,
-        "--out", out_dir,
+        sys.executable,
+        "-m",
+        "training.train",
+        "--features",
+        features,
+        "--out",
+        out_dir,
     ]
     if tune:
         cmd.extend(["--tune", "--n-trials", str(n_trials)])
@@ -87,7 +91,11 @@ def _run_training(run_id: str, features: str, out_dir: str, tune: bool, n_trials
     try:
         with open(log_path, "w") as lf:
             proc = subprocess.run(  # noqa: S603 - args are constructed, not shell-passed
-                cmd, cwd=str(cwd), stdout=lf, stderr=subprocess.STDOUT, check=False,
+                cmd,
+                cwd=str(cwd),
+                stdout=lf,
+                stderr=subprocess.STDOUT,
+                check=False,
             )
         _write_state(
             run_id,
@@ -116,7 +124,9 @@ def trigger_retrain(
 ) -> RetrainStarted:
     settings = get_settings()
     artifacts_root = Path(settings.ml_model_dir).resolve().parent
-    features = body.features or str(artifacts_root.parent / "processed" / "features_real_only.parquet")
+    features = body.features or str(
+        artifacts_root.parent / "processed" / "features_real_only.parquet"
+    )
     if not Path(features).exists():
         raise HTTPException(status_code=400, detail=f"features file not found: {features}")
     version = body.out_version or f"v_retrain_{datetime.now(tz=UTC).strftime('%Y%m%d_%H%M%S')}"
@@ -124,12 +134,20 @@ def trigger_retrain(
     run_id = uuid.uuid4().hex[:12]
     started = datetime.now(tz=UTC)
     _write_state(
-        run_id, status="queued", started_at=started.isoformat(),
-        features=features, out_dir=out_dir, tune=body.tune,
+        run_id,
+        status="queued",
+        started_at=started.isoformat(),
+        features=features,
+        out_dir=out_dir,
+        tune=body.tune,
     )
     record_audit(
-        db, user_id=actor.id, action="model.retrain", entity_type="model",
-        entity_id=run_id, payload={"features": features, "out_dir": out_dir, "tune": body.tune},
+        db,
+        user_id=actor.id,
+        action="model.retrain",
+        entity_type="model",
+        entity_id=run_id,
+        payload={"features": features, "out_dir": out_dir, "tune": body.tune},
     )
     db.commit()
     background.add_task(_run_training, run_id, features, out_dir, body.tune, body.n_trials)

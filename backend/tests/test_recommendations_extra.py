@@ -39,9 +39,12 @@ def test_dependency_recommendation_via_new_deps_count() -> None:
     recs = _base_call(
         "success",
         features={
-            "feat_run_attempt": 1, "feat_run_attempt_gt1": 0,
-            "feat_new_deps_count": 7, "feat_has_dependency_change_int": 1,
-            "feat_has_dockerfile_change_int": 0, "feat_image_growth_ratio": 1.0,
+            "feat_run_attempt": 1,
+            "feat_run_attempt_gt1": 0,
+            "feat_new_deps_count": 7,
+            "feat_has_dependency_change_int": 1,
+            "feat_has_dockerfile_change_int": 0,
+            "feat_image_growth_ratio": 1.0,
             "feat_final_image_size_mb_log": 0.0,
         },
     )
@@ -53,9 +56,12 @@ def test_docker_recommendation_via_image_growth() -> None:
     recs = _base_call(
         "success",
         features={
-            "feat_run_attempt": 1, "feat_run_attempt_gt1": 0,
-            "feat_new_deps_count": 0, "feat_has_dependency_change_int": 0,
-            "feat_has_dockerfile_change_int": 1, "feat_image_growth_ratio": 8.0,
+            "feat_run_attempt": 1,
+            "feat_run_attempt_gt1": 0,
+            "feat_new_deps_count": 0,
+            "feat_has_dependency_change_int": 0,
+            "feat_has_dockerfile_change_int": 1,
+            "feat_image_growth_ratio": 8.0,
             "feat_final_image_size_mb_log": 7.0,  # ~1.1GB
         },
     )
@@ -66,9 +72,12 @@ def test_network_recommendation_on_retry() -> None:
     recs = _base_call(
         "success",
         features={
-            "feat_run_attempt": 3, "feat_run_attempt_gt1": 1,
-            "feat_new_deps_count": 0, "feat_has_dependency_change_int": 0,
-            "feat_has_dockerfile_change_int": 0, "feat_image_growth_ratio": 1.0,
+            "feat_run_attempt": 3,
+            "feat_run_attempt_gt1": 1,
+            "feat_new_deps_count": 0,
+            "feat_has_dependency_change_int": 0,
+            "feat_has_dockerfile_change_int": 0,
+            "feat_image_growth_ratio": 1.0,
             "feat_final_image_size_mb_log": 0.0,
         },
     )

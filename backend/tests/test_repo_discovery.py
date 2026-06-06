@@ -11,11 +11,13 @@ from app.services import repo_discovery
 
 def _ctx(routes):
     fake = MagicMock()
+
     def _get(url, **_kw):
         for u, resp in routes:
             if u in url:
                 return resp
         return MagicMock(status_code=404, json=lambda: {})
+
     fake.get.side_effect = _get
     cm = MagicMock()
     cm.__enter__.return_value = fake
@@ -41,12 +43,17 @@ def test_discovery_extracts_language_and_dockerfile_and_pkgmgr() -> None:
         ],
     )
     with patch.object(
-        repo_discovery, "httpx",
+        repo_discovery,
+        "httpx",
         MagicMock(
-            Client=MagicMock(return_value=_ctx([
-                ("/contents/", contents_resp),
-                ("/repos/", repo_resp),
-            ])),
+            Client=MagicMock(
+                return_value=_ctx(
+                    [
+                        ("/contents/", contents_resp),
+                        ("/repos/", repo_resp),
+                    ]
+                )
+            ),
             HTTPError=httpx.HTTPError,
         ),
     ):
@@ -62,13 +69,15 @@ def test_discovery_extracts_language_and_dockerfile_and_pkgmgr() -> None:
 def test_discovery_swallows_http_errors() -> None:
     def raiser(*_a, **_kw):
         raise httpx.HTTPError("boom")
+
     fake = MagicMock()
     fake.get.side_effect = raiser
     cm = MagicMock()
     cm.__enter__.return_value = fake
     cm.__exit__.return_value = False
     with patch.object(
-        repo_discovery, "httpx",
+        repo_discovery,
+        "httpx",
         MagicMock(
             Client=MagicMock(return_value=cm),
             HTTPError=httpx.HTTPError,

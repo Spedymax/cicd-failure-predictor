@@ -3,22 +3,19 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ARTIFACTS = REPO_ROOT / "data" / "artifacts" / "v2"
+ARTIFACTS = REPO_ROOT / "data" / "artifacts" / "v26_5class"
 
 # Force test env BEFORE any app.* module is imported. Has to run at module
 # top-level so it precedes pytest's collection-time imports — otherwise the
 # real backend/.env (loaded by pydantic-settings via lru_cache) overrides
 # our test values and signatures, JWT keys, etc. diverge.
 os.environ["APP_SECRET_KEY"] = "x" * 32
-os.environ["POSTGRES_USER"] = "cicd_predictor"
-os.environ["POSTGRES_PASSWORD"] = "changeme"
-os.environ["POSTGRES_DB"] = "cicd_predictor"
-os.environ.setdefault("POSTGRES_HOST", "localhost")
 os.environ["GITHUB_WEBHOOK_SECRET"] = "test-webhook-secret"
 os.environ["GITHUB_API_TOKEN"] = "test-token"
 os.environ["ML_MODEL_DIR"] = str(ARTIFACTS)
+# Self-contained DB: in-memory SQLite (no external PostgreSQL/Docker needed).
+os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
 
 # Clear cached settings in case anything imported it before this point.
 try:
@@ -29,9 +26,44 @@ except Exception:
     pass
 
 
+# Create the schema on the in-memory engine and seed deterministic users so the
+# auth/RBAC integration tests resolve real rows (admin@example.com / dev@…).
+def _bootstrap_db() -> None:
+    from app.core.auth import hash_password
+    from app.db import models  # noqa: F401  (register all tables)
+    from app.db.base import Base
+    from app.db.models import User, UserRole
+    from app.db.session import SessionLocal, engine
+
+    Base.metadata.create_all(engine)
+
+    with SessionLocal() as session:
+        existing = {u.email for u in session.query(User).all()}
+        seed = [
+            ("admin@example.com", "Admin", UserRole.ADMIN, "admin12345"),
+            ("dev@example.com", "Dev", UserRole.DEVELOPER, "dev12345"),
+        ]
+        for email, name, role, pw in seed:
+            if email not in existing:
+                session.add(
+                    User(
+                        email=email,
+                        name=name,
+                        role=role,
+                        password_hash=hash_password(pw),
+                        is_active=True,
+                    )
+                )
+        session.commit()
+
+
+_bootstrap_db()
+
+
 def pytest_sessionstart(session):
     """Wipe webhook idempotency keys so hardcoded delivery_ids in tests don't
-    collide with stale entries from a previous run.
+    collide with stale entries from a previous run. Redis is optional — the
+    suite runs fine without it (claim_delivery degrades gracefully).
     """
     try:
         from app.core.redis_client import get_redis  # noqa: E402

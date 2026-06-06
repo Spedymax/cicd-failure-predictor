@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 
 @lru_cache
 def get_redis() -> redis.Redis:
-    return redis.Redis.from_url(
-        get_settings().redis_url, decode_responses=True, socket_timeout=2.0
-    )
+    return redis.Redis.from_url(get_settings().redis_url, decode_responses=True, socket_timeout=2.0)
 
 
 def claim_delivery(delivery_id: str, ttl_seconds: int = 3600) -> bool:
@@ -27,8 +25,9 @@ def claim_delivery(delivery_id: str, ttl_seconds: int = 3600) -> bool:
     if not delivery_id:
         return True
     try:
-        return bool(get_redis().set(f"webhook:delivery:{delivery_id}", "1",
-                                     nx=True, ex=ttl_seconds))
+        return bool(
+            get_redis().set(f"webhook:delivery:{delivery_id}", "1", nx=True, ex=ttl_seconds)
+        )
     except redis.RedisError as exc:
         logger.warning("redis idempotency check failed (%s); allowing through", exc)
         return True

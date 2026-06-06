@@ -37,7 +37,11 @@ DEPENDENCY_MARKERS = (
 
 
 def _detect_dependency_change(filenames: list[str]) -> bool:
-    return any(name.lower().endswith(m) or name.lower() == m for name in filenames for m in DEPENDENCY_MARKERS)
+    return any(
+        name.lower().endswith(m) or name.lower() == m
+        for name in filenames
+        for m in DEPENDENCY_MARKERS
+    )
 
 
 def _detect_dockerfile_change(filenames: list[str]) -> bool:
@@ -82,7 +86,11 @@ def _author_history(db: Session, repo_id: int, author_email: str) -> dict[str, f
     ).all()
     n_runs = len(rows)
     if n_runs == 0:
-        return {"author_success_rate": 0.5, "author_n_runs_log": 0.0, "author_avg_duration_log": math.log1p(360)}
+        return {
+            "author_success_rate": 0.5,
+            "author_n_runs_log": 0.0,
+            "author_avg_duration_log": math.log1p(360),
+        }
 
     # Pull successful conclusions via predictions.actual_outcome or fall
     # back to a 0.5 prior; in MVP we approximate using prediction risk.
@@ -95,7 +103,9 @@ def _author_history(db: Session, repo_id: int, author_email: str) -> dict[str, f
     ).all()
     if pred_rows:
         outcomes = [r[1] or r[0] for r in pred_rows]
-        success_rate = sum(1 for o in outcomes if o is not None and str(o) == "success") / len(outcomes)
+        success_rate = sum(1 for o in outcomes if o is not None and str(o) == "success") / len(
+            outcomes
+        )
     else:
         success_rate = 0.5
 
@@ -108,7 +118,9 @@ def _author_history(db: Session, repo_id: int, author_email: str) -> dict[str, f
 
 def _project_history(db: Session, repo_id: int) -> dict[str, float]:
     n_runs = db.scalar(select(func.count(Commit.id)).where(Commit.repository_id == repo_id)) or 0
-    pred_count = db.scalar(select(func.count(Prediction.id)).where(Prediction.repository_id == repo_id)) or 0
+    pred_count = (
+        db.scalar(select(func.count(Prediction.id)).where(Prediction.repository_id == repo_id)) or 0
+    )
     fail_count = (
         db.scalar(
             select(func.count(Prediction.id)).where(
@@ -204,12 +216,24 @@ def build_feature_vector(
     feats["feat_test_changes_share"] = (
         float(test_dir_count) / files_changed if files_changed else 0.0
     )
-    feats["feat_has_lint_config_change_int"] = int(any(
-        any(name in (f.get("filename") or "").lower() for name in (
-            ".eslintrc", ".prettierrc", "ruff.toml", "pyproject.toml",
-            ".flake8", "tslint", "stylelint", ".editorconfig",
-        )) for f in files
-    ))
+    feats["feat_has_lint_config_change_int"] = int(
+        any(
+            any(
+                name in (f.get("filename") or "").lower()
+                for name in (
+                    ".eslintrc",
+                    ".prettierrc",
+                    "ruff.toml",
+                    "pyproject.toml",
+                    ".flake8",
+                    "tslint",
+                    "stylelint",
+                    ".editorconfig",
+                )
+            )
+            for f in files
+        )
+    )
     feats["feat_event_is_push_int"] = 1
 
     feats["feat_author_success_rate"] = auth["author_success_rate"]

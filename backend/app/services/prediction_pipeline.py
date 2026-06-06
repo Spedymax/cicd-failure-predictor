@@ -5,9 +5,8 @@ Runs synchronously inside a FastAPI BackgroundTask.
 
 from __future__ import annotations
 
-import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -30,14 +29,21 @@ logger = logging.getLogger(__name__)
 DEFAULT_THRESHOLDS = (0.50, 0.90)
 
 DEPENDENCY_FILES = {
-    "requirements.txt", "requirements-lock.txt", "requirements-dev.txt",
-    "pyproject.toml", "poetry.lock", "uv.lock", "pipfile", "pipfile.lock",
+    "requirements.txt",
+    "requirements-lock.txt",
+    "requirements-dev.txt",
+    "pyproject.toml",
+    "poetry.lock",
+    "uv.lock",
+    "pipfile",
+    "pipfile.lock",
 }
 
 
 def _fetch_raw_file(full_name: str, sha: str, path: str, token: str) -> str | None:
     """Best-effort fetch of a file's raw content at a given commit."""
     import httpx
+
     try:
         with httpx.Client(timeout=4.0) as c:
             r = c.get(
@@ -54,8 +60,10 @@ def _fetch_raw_file(full_name: str, sha: str, path: str, token: str) -> str | No
 def _check_pypi_package(name_spec: str) -> bool:
     """Return True if package name exists on PyPI (ignoring version specifier)."""
     import re
+
     import httpx
-    name = re.split(r"[<>=!~\s\[]", name_spec.strip(), 1)[0]
+
+    name = re.split(r"[<>=!~\s\[]", name_spec.strip(), maxsplit=1)[0]
     if not name or name.startswith("#") or name.startswith("-"):
         return True  # comments / pip flags → skip
     try:
@@ -68,20 +76,24 @@ def _check_pypi_package(name_spec: str) -> bool:
 
 def _validate_dependencies(content: str) -> bool:
     """Heuristic: every non-empty, non-comment requirement must resolve on PyPI."""
-    lines = [ln.strip() for ln in content.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    lines = [
+        ln.strip() for ln in content.splitlines() if ln.strip() and not ln.strip().startswith("#")
+    ]
     if not lines:
         return True
-    for ln in lines[:15]:  # cap to avoid slow webhooks
-        if not _check_pypi_package(ln):
-            return False
-    return True
+    # cap to avoid slow webhooks
+    return all(_check_pypi_package(ln) for ln in lines[:15])
 
 
 def _validate_dockerfile(content: str) -> bool:
     """Cheap Dockerfile checks: parsable FROM line + base image exists on registry."""
     import re
+
     import httpx
-    lines = [ln.strip() for ln in content.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+
+    lines = [
+        ln.strip() for ln in content.splitlines() if ln.strip() and not ln.strip().startswith("#")
+    ]
     from_lines = [ln for ln in lines if ln.upper().startswith("FROM ")]
     if not from_lines:
         return False
@@ -96,9 +108,24 @@ def _validate_dockerfile(content: str) -> bool:
     if "/" not in image:
         image = f"library/{image}"
     valid_instructions = {
-        "FROM", "RUN", "CMD", "ENTRYPOINT", "WORKDIR", "COPY", "ADD",
-        "ENV", "ARG", "EXPOSE", "VOLUME", "USER", "LABEL", "ONBUILD",
-        "STOPSIGNAL", "HEALTHCHECK", "SHELL", "MAINTAINER",
+        "FROM",
+        "RUN",
+        "CMD",
+        "ENTRYPOINT",
+        "WORKDIR",
+        "COPY",
+        "ADD",
+        "ENV",
+        "ARG",
+        "EXPOSE",
+        "VOLUME",
+        "USER",
+        "LABEL",
+        "ONBUILD",
+        "STOPSIGNAL",
+        "HEALTHCHECK",
+        "SHELL",
+        "MAINTAINER",
     }
     for ln in lines:
         first = ln.split(None, 1)[0].upper()
@@ -129,7 +156,7 @@ def _preflight_validate(
     deps_valid: bool | None = None
     docker_valid: bool | None = None
     for f in files:
-        path = (f.get("filename") or "")
+        path = f.get("filename") or ""
         base = path.rsplit("/", 1)[-1].lower()
         if base in DEPENDENCY_FILES and deps_valid is None:
             content = _fetch_raw_file(full_name, sha, path, token)
@@ -144,7 +171,7 @@ def _preflight_validate(
     return {"deps_valid": deps_valid, "docker_valid": docker_valid}
 
 
-def _resolve_thresholds(db: Session, repo: "Repository | None") -> tuple[float, float]:
+def _resolve_thresholds(db: Session, repo: Repository | None) -> tuple[float, float]:
     """Pick (auto_approve_threshold, block_threshold) for this repo.
 
     Order: repo.policy → first is_default=True policy → DEFAULT_THRESHOLDS.
@@ -182,7 +209,9 @@ def _resolve_predicted_class(
          the change shape looks like).
     """
     files = int(features.get("files_changed", 0) or 0)
-    lines_total = int(features.get("lines_added", 0) or 0) + int(features.get("lines_deleted", 0) or 0)
+    lines_total = int(features.get("lines_added", 0) or 0) + int(
+        features.get("lines_deleted", 0) or 0
+    )
     has_docker = bool(features.get("has_dockerfile_change"))
     has_deps = bool(features.get("has_dependency_change"))
     has_test_only = bool(features.get("has_test_only_changes"))
@@ -217,7 +246,9 @@ def _decide(
 
     if features is not None:
         files = int(features.get("files_changed", 0) or 0)
-        lines_total = int(features.get("lines_added", 0) or 0) + int(features.get("lines_deleted", 0) or 0)
+        lines_total = int(features.get("lines_added", 0) or 0) + int(
+            features.get("lines_deleted", 0) or 0
+        )
         # Hard cap for genuinely massive PRs — reviewer cannot meaningfully
         # vouch for thousands of lines in one commit, regardless of risk.
         if files > 100 or lines_total > 5000:
@@ -285,9 +316,7 @@ def _ensure_commit(
     lines_deleted: int,
     raw_metadata: dict[str, Any],
 ) -> Commit:
-    existing = db.scalar(
-        select(Commit).where(Commit.repository_id == repo.id, Commit.sha == sha)
-    )
+    existing = db.scalar(select(Commit).where(Commit.repository_id == repo.id, Commit.sha == sha))
     if existing is not None:
         return existing
     commit = Commit(
@@ -319,7 +348,9 @@ def _ensure_active_model_version(db: Session, engine: InferenceEngine) -> ModelV
         classifier_path="classifier.joblib",
         regressor_path="regressor_memory.joblib,regressor_duration.joblib",
         feature_pipeline_path="feature_columns.json",
-        trained_at=datetime.fromisoformat(version_str) if version_str != "unknown" else datetime.now(tz=timezone.utc),
+        trained_at=datetime.fromisoformat(version_str)
+        if version_str != "unknown"
+        else datetime.now(tz=UTC),
         training_dataset_size=int(engine.version.get("n_train", 0)),
         metrics={"classes": metrics},
         is_active=True,
@@ -361,7 +392,7 @@ def process_push_event(
     author_name = author.get("name")
     message = head_commit.get("message")
     branch = (payload.get("ref") or "").replace("refs/heads/", "") or None
-    committed_at = datetime.now(tz=timezone.utc)
+    committed_at = datetime.now(tz=UTC)
 
     added_paths = head_commit.get("added") or []
     modified_paths = head_commit.get("modified") or []
@@ -405,7 +436,11 @@ def process_push_event(
                         ]
                     logger.info(
                         "enriched commit %s/%s: +%d/-%d over %d files",
-                        full_name, sha[:7], lines_added, lines_deleted, len(files),
+                        full_name,
+                        sha[:7],
+                        lines_added,
+                        lines_deleted,
+                        len(files),
                     )
         except Exception as exc:  # noqa: BLE001
             logger.warning("commit stats fetch failed for %s/%s: %s", full_name, sha[:7], exc)
@@ -463,26 +498,46 @@ def process_push_event(
             for f in files
         ),
         "has_dependency_change": any(
-            (f.get("filename") or "").rsplit("/", 1)[-1].lower() in {
-                "requirements.txt", "requirements-lock.txt", "package.json",
-                "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
-                "pyproject.toml", "poetry.lock", "uv.lock", "pipfile",
-                "go.mod", "go.sum", "cargo.toml", "cargo.lock",
-                "pom.xml", "build.gradle", "gemfile.lock",
+            (f.get("filename") or "").rsplit("/", 1)[-1].lower()
+            in {
+                "requirements.txt",
+                "requirements-lock.txt",
+                "package.json",
+                "package-lock.json",
+                "yarn.lock",
+                "pnpm-lock.yaml",
+                "pyproject.toml",
+                "poetry.lock",
+                "uv.lock",
+                "pipfile",
+                "go.mod",
+                "go.sum",
+                "cargo.toml",
+                "cargo.lock",
+                "pom.xml",
+                "build.gradle",
+                "gemfile.lock",
             }
             for f in files
         ),
         "has_test_only_changes": bool(feats.get("feat_test_only_changes_int", 0)),
     }
     resolved_class = _resolve_predicted_class(
-        result.predicted_class, result.class_probabilities, rule_features,
+        result.predicted_class,
+        result.class_probabilities,
+        rule_features,
     )
     validation: dict[str, bool | None] = {"deps_valid": None, "docker_valid": None}
     if rule_features["has_dependency_change"] or rule_features["has_dockerfile_change"]:
         try:
             from app.core.config import get_settings as _gs2
+
             validation = _preflight_validate(full_name, sha, files, _gs2().github_api_token)
-            logger.info("preflight: deps_valid=%s docker_valid=%s", validation["deps_valid"], validation["docker_valid"])
+            logger.info(
+                "preflight: deps_valid=%s docker_valid=%s",
+                validation["deps_valid"],
+                validation["docker_valid"],
+            )
         except Exception as exc:  # noqa: BLE001
             logger.warning("preflight validation failed: %s", exc)
     decision = _decide(
@@ -516,13 +571,19 @@ def process_push_event(
     db.refresh(prediction)
     logger.info(
         "prediction stored: id=%s sha=%s class=%s risk=%.2f decision=%s ms=%d",
-        prediction.id, sha[:8], result.predicted_class, result.risk_score, decision.value, result.inference_time_ms,
+        prediction.id,
+        sha[:8],
+        result.predicted_class,
+        result.risk_score,
+        decision.value,
+        result.inference_time_ms,
     )
     # Post commit status back to GitHub so BLOCK actually gates merge via
     # branch protection. Best-effort: synthetic fixtures and disabled mode
     # are skipped inside the service.
     try:
         from app.services.github_status import post_commit_status
+
         post_commit_status(full_name, sha, decision, prediction.id)
     except Exception as exc:  # noqa: BLE001
         logger.warning("github status post failed for %s@%s: %s", full_name, sha[:8], exc)

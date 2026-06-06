@@ -31,9 +31,7 @@ class PolicyIn(BaseModel):
     @model_validator(mode="after")
     def _check_order(self) -> PolicyIn:
         if not (self.auto_approve_threshold <= self.warn_threshold <= self.block_threshold):
-            raise ValueError(
-                "thresholds must be ordered: auto_approve <= warn <= block"
-            )
+            raise ValueError("thresholds must be ordered: auto_approve <= warn <= block")
         return self
 
 
@@ -86,8 +84,12 @@ def create_policy(
     db.add(p)
     db.flush()
     record_audit(
-        db, user_id=actor.id, action="policy.create", entity_type="policy",
-        entity_id=p.id, payload=body.model_dump(),
+        db,
+        user_id=actor.id,
+        action="policy.create",
+        entity_type="policy",
+        entity_id=p.id,
+        payload=body.model_dump(),
     )
     db.commit()
     db.refresh(p)
@@ -109,8 +111,12 @@ def update_policy(
     for k, v in body.model_dump().items():
         setattr(p, k, v)
     record_audit(
-        db, user_id=actor.id, action="policy.update", entity_type="policy",
-        entity_id=p.id, payload=body.model_dump(),
+        db,
+        user_id=actor.id,
+        action="policy.update",
+        entity_type="policy",
+        entity_id=p.id,
+        payload=body.model_dump(),
     )
     db.commit()
     db.refresh(p)
@@ -129,8 +135,12 @@ def delete_policy(
     if p.is_default:
         raise HTTPException(status_code=400, detail="cannot delete the default policy")
     record_audit(
-        db, user_id=actor.id, action="policy.delete", entity_type="policy",
-        entity_id=p.id, payload={"name": p.name},
+        db,
+        user_id=actor.id,
+        action="policy.delete",
+        entity_type="policy",
+        entity_id=p.id,
+        payload={"name": p.name},
     )
     db.delete(p)
     db.commit()

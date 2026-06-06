@@ -28,7 +28,6 @@ from app.db.models import (
     Repository,
 )
 
-
 _CONCLUSION_TO_STATUS = {
     "success": BuildStatus.SUCCESS,
     "failure": BuildStatus.FAILURE,
@@ -73,9 +72,7 @@ def process_workflow_run_event(db: Session, payload: dict[str, Any]) -> dict[str
         logger.info("workflow_run for unknown repo %s; skipping", repo_name)
         return {"skipped": True, "reason": "unknown repo"}
 
-    commit = db.scalar(
-        select(Commit).where(Commit.repository_id == repo.id, Commit.sha == sha)
-    )
+    commit = db.scalar(select(Commit).where(Commit.repository_id == repo.id, Commit.sha == sha))
 
     actual_outcome: FailureClass | None = None
     if conclusion == "success":
@@ -108,9 +105,8 @@ def process_workflow_run_event(db: Session, payload: dict[str, Any]) -> dict[str
     # started_at, completed_at, raw_payload)
     started = _parse_iso(run.get("run_started_at") or run.get("created_at"))
     completed = _parse_iso(run.get("updated_at"))
-    duration_seconds = (
-        (completed - started).total_seconds() if started and completed else None
-    )
+    # column is Integer; whole seconds match the DB type (and the regressor target unit)
+    duration_seconds = int((completed - started).total_seconds()) if started and completed else None
     # GitHub's `status` is workflow-state ("completed"/"in_progress"); our
     # BuildStatus enum stores the *result*, so map from conclusion.
     if run.get("status") == "in_progress":
@@ -158,9 +154,7 @@ def process_workflow_run_event(db: Session, payload: dict[str, Any]) -> dict[str
     # 2) update matching predictions with ground truth
     n_updated = 0
     if commit is not None and actual_outcome is not None:
-        preds = db.scalars(
-            select(Prediction).where(Prediction.commit_id == commit.id)
-        ).all()
+        preds = db.scalars(select(Prediction).where(Prediction.commit_id == commit.id)).all()
         for p in preds:
             p.actual_outcome = actual_outcome
             n_updated += 1

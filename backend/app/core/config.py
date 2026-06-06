@@ -44,9 +44,9 @@ class Settings(BaseSettings):
             url = self.database_url_override
             # Fly hands out ``postgres://...``; psycopg3 wants the explicit driver tag.
             if url.startswith("postgres://"):
-                url = "postgresql+psycopg://" + url[len("postgres://"):]
+                url = "postgresql+psycopg://" + url[len("postgres://") :]
             elif url.startswith("postgresql://"):
-                url = "postgresql+psycopg://" + url[len("postgresql://"):]
+                url = "postgresql+psycopg://" + url[len("postgresql://") :]
             return url
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
@@ -56,4 +56,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    # required fields are populated from env / .env by pydantic-settings at runtime
+    return Settings()  # type: ignore[call-arg]

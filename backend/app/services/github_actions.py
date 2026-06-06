@@ -47,14 +47,15 @@ def rerun_failed_runs_for_sha(full_name: str, sha: str) -> int:
     try:
         with httpx.Client(timeout=8.0) as c:
             list_url = (
-                f"https://api.github.com/repos/{full_name}/actions/runs"
-                f"?head_sha={sha}&per_page=20"
+                f"https://api.github.com/repos/{full_name}/actions/runs?head_sha={sha}&per_page=20"
             )
             r = c.get(list_url, headers=headers)
             if r.status_code != 200:
                 logger.warning(
                     "github_actions: list runs failed for %s@%s status=%d",
-                    full_name, sha[:8], r.status_code,
+                    full_name,
+                    sha[:8],
+                    r.status_code,
                 )
                 return 0
             runs = r.json().get("workflow_runs", []) or []
@@ -77,12 +78,15 @@ def rerun_failed_runs_for_sha(full_name: str, sha: str) -> int:
                     triggered += 1
                     logger.info(
                         "github_actions: rerun triggered for %s run_id=%s",
-                        full_name, run_id,
+                        full_name,
+                        run_id,
                     )
                 else:
                     logger.warning(
                         "github_actions: rerun failed for run_id=%s status=%d body=%s",
-                        run_id, rr.status_code, rr.text[:200],
+                        run_id,
+                        rr.status_code,
+                        rr.text[:200],
                     )
     except Exception as exc:  # noqa: BLE001
         logger.warning("github_actions: exception for %s@%s — %s", full_name, sha[:8], exc)

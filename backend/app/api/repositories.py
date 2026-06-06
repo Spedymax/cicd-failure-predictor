@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -39,14 +39,16 @@ class RepositoryOut(BaseModel):
     is_active: bool
 
     @classmethod
-    def from_orm_(cls, r: Repository, *, secret: str | None = None) -> "RepositoryOut":
+    def from_orm_(cls, r: Repository, *, secret: str | None = None) -> RepositoryOut:
         return cls(
             id=r.id,
             provider=r.provider.value if hasattr(r.provider, "value") else str(r.provider),
             full_name=r.full_name,
             url=r.url,
             default_branch=r.default_branch,
-            ci_platform=r.ci_platform.value if hasattr(r.ci_platform, "value") else str(r.ci_platform),
+            ci_platform=r.ci_platform.value
+            if hasattr(r.ci_platform, "value")
+            else str(r.ci_platform),
             language=r.language,
             package_manager=r.package_manager,
             has_dockerfile=r.has_dockerfile,
@@ -90,7 +92,7 @@ def create_repository(body: RepositoryIn, db: Session = Depends(get_db)) -> Repo
         language=metadata.language,
         has_dockerfile=metadata.has_dockerfile,
         package_manager=metadata.package_manager,
-        last_synced_at=datetime.now(tz=timezone.utc),
+        last_synced_at=datetime.now(tz=UTC),
     )
     db.add(repo)
     db.commit()

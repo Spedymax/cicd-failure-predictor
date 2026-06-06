@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import Row, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.audit import record_audit
@@ -18,10 +19,14 @@ from app.schemas.prediction import (
     RecommendationOut,
 )
 
+if TYPE_CHECKING:
+    from app.schemas.prediction import ShapExplanation
+
 
 class OverrideIn(BaseModel):
     new_decision: PredictionDecision
     reason: str = Field(min_length=1, max_length=1000)
+
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -39,7 +44,7 @@ ALL_CLASSES: tuple[str, ...] = (
 )
 
 
-def _to_list_item(row: tuple[Prediction, Repository]) -> PredictionListItem:
+def _to_list_item(row: Row[tuple[Prediction, Repository]]) -> PredictionListItem:
     pred, repo = row
     sha = pred.commit.sha if pred.commit else ""
     return PredictionListItem(
@@ -89,7 +94,9 @@ def list_predictions(
         try:
             cls = FailureClass(predicted_class)
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail=f"unknown predicted_class={predicted_class}") from exc
+            raise HTTPException(
+                status_code=400, detail=f"unknown predicted_class={predicted_class}"
+            ) from exc
         stmt = stmt.where(Prediction.predicted_class == cls)
         count_stmt = count_stmt.where(Prediction.predicted_class == cls)
     rows = db.execute(stmt.limit(limit).offset(offset)).all()
@@ -123,9 +130,7 @@ def predictions_accuracy(
             stmt = stmt.where(~Repository.full_name.like(f"{p}%"))
 
     rows = db.execute(stmt).all()
-    confusion: dict[str, dict[str, int]] = {
-        a: {p: 0 for p in ALL_CLASSES} for a in ALL_CLASSES
-    }
+    confusion: dict[str, dict[str, int]] = {a: {p: 0 for p in ALL_CLASSES} for a in ALL_CLASSES}
     n_total = 0
     n_match = 0
     for pred_cls, actual_cls, _full_name in rows:
@@ -215,8 +220,11 @@ def override_prediction(
     pred.overridden_at = datetime.now(tz=UTC)
     pred.overridden_by_user_id = user.id
     record_audit(
-        db, user_id=user.id, action="prediction.override",
-        entity_type="prediction", entity_id=pred.id,
+        db,
+        user_id=user.id,
+        action="prediction.override",
+        entity_type="prediction",
+        entity_id=pred.id,
         payload={"new_decision": body.new_decision.value, "reason": body.reason},
     )
     db.commit()
@@ -250,7 +258,9 @@ def get_prediction(prediction_id: int, db: Session = Depends(get_db)) -> Predict
     raw = (pred.commit.raw_metadata if pred.commit else {}) or {}
     workflow_name = raw.get("workflow_name") or None
     workflow_run_url = raw.get("external_run_html_url") or None
-    repo_full_name = pred.commit.repository.full_name if pred.commit and pred.commit.repository else ""
+    repo_full_name = (
+        pred.commit.repository.full_name if pred.commit and pred.commit.repository else ""
+    )
     return PredictionOut(
         id=pred.id,
         repository_id=pred.repository_id,
@@ -267,7 +277,8 @@ def get_prediction(prediction_id: int, db: Session = Depends(get_db)) -> Predict
         confidence=pred.confidence,
         class_probabilities=pred.class_probabilities,
         feature_importance=pred.feature_importance,
-        shap_explanation=pred.shap_explanation,
+        # stored as plain JSON dict; pydantic coerces it into ShapExplanation
+        shap_explanation=cast("ShapExplanation | None", pred.shap_explanation),
         predicted_memory_mb=pred.predicted_memory_mb,
         predicted_duration_min=pred.predicted_duration_min,
         recommendations=recs,
