@@ -21,6 +21,7 @@ import logging
 import httpx
 
 from app.core.config import get_settings
+from app.core.resilient_http import call_with_resilience
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ def rerun_failed_runs_for_sha(full_name: str, sha: str) -> int:
             list_url = (
                 f"https://api.github.com/repos/{full_name}/actions/runs?head_sha={sha}&per_page=20"
             )
-            r = c.get(list_url, headers=headers)
+            r = call_with_resilience("github", lambda: c.get(list_url, headers=headers))
             if r.status_code != 200:
                 logger.warning(
                     "github_actions: list runs failed for %s@%s status=%d",

@@ -33,6 +33,7 @@ import logging
 import httpx
 
 from app.core.config import get_settings
+from app.core.resilient_http import call_with_resilience
 from app.db.models import PredictionDecision
 
 logger = logging.getLogger(__name__)
@@ -100,7 +101,7 @@ def post_commit_status(
     }
     try:
         with httpx.Client(timeout=8.0) as c:
-            r = c.post(url, headers=headers, json=body)
+            r = call_with_resilience("github", lambda: c.post(url, headers=headers, json=body))
         if 200 <= r.status_code < 300:
             logger.info(
                 "github_status: posted state=%s for %s@%s pred=%d",

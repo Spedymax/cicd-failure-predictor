@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ARTIFACTS = REPO_ROOT / "data" / "artifacts" / "v26_5class"
 
@@ -58,6 +60,17 @@ def _bootstrap_db() -> None:
 
 
 _bootstrap_db()
+
+
+@pytest.fixture(autouse=True)
+def _reset_circuit_breakers():
+    """Isolate circuit-breaker state between tests so a failure in one test
+    cannot open the shared 'github' breaker and trip the next."""
+    from app.core.resilient_http import reset_breakers
+
+    reset_breakers()
+    yield
+    reset_breakers()
 
 
 def pytest_sessionstart(session):

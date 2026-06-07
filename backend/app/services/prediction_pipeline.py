@@ -409,15 +409,19 @@ def process_push_event(
             import httpx
 
             from app.core.config import get_settings as _gs
+            from app.core.resilient_http import call_with_resilience
 
             tok = _gs().github_api_token
             with httpx.Client(timeout=8.0) as c:
-                r = c.get(
-                    f"https://api.github.com/repos/{full_name}/commits/{sha}",
-                    headers={
-                        "Authorization": f"Bearer {tok}",
-                        "Accept": "application/vnd.github+json",
-                    },
+                r = call_with_resilience(
+                    "github",
+                    lambda: c.get(
+                        f"https://api.github.com/repos/{full_name}/commits/{sha}",
+                        headers={
+                            "Authorization": f"Bearer {tok}",
+                            "Accept": "application/vnd.github+json",
+                        },
+                    ),
                 )
                 if r.status_code == 200:
                     body = r.json()

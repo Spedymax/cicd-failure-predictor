@@ -24,6 +24,7 @@ dependencies = [
     "python-jose[cryptography]>=3.3",
     "passlib[bcrypt]>=1.7.4",
     "structlog>=24.4",
+    "tenacity>=9.0",
     "bcrypt<4.1",
     "pyarrow>=24.0.0",
     "tqdm>=4.67.3",
